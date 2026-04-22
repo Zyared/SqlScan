@@ -1,0 +1,2 @@
+Ожидаемая сумма весов: 30 (шесть вхождений «union select», по 5).
+union select union select union select union select union select union select

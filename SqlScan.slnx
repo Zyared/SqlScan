@@ -1,0 +1,7 @@
+<Solution>
+  <Configurations>
+    <Platform Name="x64" />
+    <Platform Name="x86" />
+  </Configurations>
+  <Project Path="SqlScan.vcxproj" Id="b02523bd-269c-40f8-8576-ac3b4c479608" />
+</Solution>

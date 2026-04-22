@@ -1,0 +1,9 @@
+-- Примеры подозрительных фрагментов для SqlScan (загрузите файл и нажмите «Проверить»)
+
+admin' OR '1'='1
+1' OR 1=1--
+' OR 1=1 /*
+test' UNION SELECT username, password FROM users--
+1'; DROP TABLE users;--
+' OR SLEEP(5)--
+1' AND benchmark(1000000,MD5(1))--
