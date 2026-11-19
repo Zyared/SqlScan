@@ -17,9 +17,9 @@ void Check(SQLRETURN rc, SQLSMALLINT kind, SQLHANDLE handle) {
     SQLINTEGER native{};
     SQLSMALLINT n{};
     if (handle && SQL_SUCCEEDED(SQLGetDiagRecW(kind, handle, 1, state, &native, message, 1024, &n)))
-        throw std::runtime_error(io::Utf8(reinterpret_cast<wchar_t *>(state)) + ": " +
+        throw DbError(io::Utf8(reinterpret_cast<wchar_t *>(state)) + ": " +
                                  io::Utf8(reinterpret_cast<wchar_t *>(message)));
-    throw std::runtime_error("Ошибка ODBC");
+    throw DbError("Ошибка ODBC");
 }
 class Statement {
   public:
@@ -75,11 +75,8 @@ void DbConnection::Open(const std::wstring &connection) {
                                     nullptr, SQL_DRIVER_NOPROMPT);
         Check(rc, SQL_HANDLE_DBC, dbc_);
         loggedIn_ = true;
-        for (int id : {IDR_SCHEMA, IDR_UPGRADE}) {
-            Statement stmt(dbc_);
-            auto ddl = ResourceSql(id);
-            Check(SQLExecDirectW(stmt.value, (SQLWCHAR *)ddl.c_str(), SQL_NTS), SQL_HANDLE_STMT, stmt.value);
-        }
+        for (int id : {IDR_SCHEMA, IDR_UPGRADE})
+            Query(ResourceSql(id));
     } catch (...) {
         Close();
         throw;
@@ -87,7 +84,7 @@ void DbConnection::Open(const std::wstring &connection) {
 }
 Rows DbConnection::Query(const std::wstring &sql, const Row &args) {
     if (!Connected())
-        throw std::runtime_error("Нет подключения к базе");
+        throw DbError("Нет подключения к базе");
     Statement stmt(dbc_);
     Check(SQLPrepareW(stmt.value, (SQLWCHAR *)sql.c_str(), SQL_NTS), SQL_HANDLE_STMT, stmt.value);
     std::vector<std::wstring> values;
@@ -226,18 +223,11 @@ std::string ScanRepository::Save(const DetectionReport &r, std::string type, std
                     std::to_string(r.analyzedInputBytes)})
                 .at(0)
                 .at(0);
-        for (std::size_t start = 0; start < r.hits.size(); start += 500) {
-            std::string data = "[";
-            for (std::size_t i = start; i < (std::min)(start + 500, r.hits.size()); ++i) {
-                auto &h = r.hits[i];
-                if (i != start)
-                    data += ',';
-                data += "{\"rule_id\":" + std::to_string(h.ruleId) +
-                        ",\"line_no\":" + std::to_string(h.line) + ",\"pos\":" + std::to_string(h.position) +
-                        ",\"weight\":" + std::to_string(h.weight) + ",\"pattern\":" + io::Json(h.pattern) +
-                        ",\"high\":" + Flag(h.highRisk) + ",\"ctx\":" + io::Json(h.context) +
-                        ",\"category\":" + io::Json(h.category) + "}";
-            }
+        std::string data = "[";
+        std::size_t pending = 0;
+        auto flush = [&] {
+            if (!pending)
+                return;
             data += ']';
             db_.Query(
                 L"INSERT INTO "
@@ -246,8 +236,22 @@ std::string ScanRepository::Save(const DetectionReport &r, std::string type, std
                 L"?::bigint,h.rule_id,h.line_no,h.pos,h.pattern,h.weight,h.high,h.ctx,h.category FROM "
                 L"jsonb_to_recordset(?::jsonb) AS h(rule_id int,line_no int,pos int,pattern text,weight "
                 L"int,high boolean,ctx text,category text)",
-                {id, std::move(data)});
-        }
+                {id, data});
+            data.assign("[");
+            pending = 0;
+        };
+        r.ForEachHit([&](const DetectionHit &h) {
+            if (pending)
+                data += ',';
+            data += "{\"rule_id\":" + std::to_string(h.ruleId) +
+                    ",\"line_no\":" + std::to_string(h.line) + ",\"pos\":" + std::to_string(h.position) +
+                    ",\"weight\":" + std::to_string(h.weight) + ",\"pattern\":" + io::Json(h.pattern) +
+                    ",\"high\":" + Flag(h.highRisk) + ",\"ctx\":" + io::Json(h.context) +
+                    ",\"category\":" + io::Json(h.category) + "}";
+            if (++pending == 500)
+                flush();
+        });
+        flush();
     });
     return id;
 }
@@ -283,16 +287,17 @@ Rows ScanRepository::ScanSummary(std::string id) {
     return db_.Query(
         L"SELECT s.id,to_char(started_at,'YYYY-MM-DD "
         L"HH24:MI:SS'),source_type,source_name,total_score,threshold_used,suspicious::int,risk,line_"
-        L"count,hit_count,input_bytes,analyzed_bytes,truncated::int,encode(input_sha256,'hex') FROM "
+        L"count,hit_count,input_bytes,analyzed_bytes,truncated::int,encode(input_sha256,'hex'), "
+        L"(SELECT count(*) FROM sqlscan.hit h WHERE h.scan_id=s.id) FROM "
         L"sqlscan.scan s WHERE id=?::bigint",
         {id});
 }
-Rows ScanRepository::ScanHits(std::string id) {
+Rows ScanRepository::ScanHits(std::string id, int limit) {
     return db_.Query(
         L"SELECT "
         L"line_no,position,pattern_applied,weight_applied,high_risk_applied::int,context,category_"
-        L"applied FROM sqlscan.hit WHERE scan_id=?::bigint ORDER BY line_no,position,id",
-        {id});
+        L"applied FROM sqlscan.hit WHERE scan_id=?::bigint ORDER BY line_no,position,id LIMIT NULLIF(?::int,-1)",
+        {id, std::to_string(limit)});
 }
 void ScanRepository::DeleteScan(std::string id) {
     db_.Query(L"DELETE FROM sqlscan.scan WHERE id=?::bigint", {id});

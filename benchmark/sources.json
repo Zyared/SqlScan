@@ -1,0 +1,51 @@
+{
+  "http": {
+    "url": "https://raw.githubusercontent.com/Morzeux/HttpParamsDataset/926670a710283f87c05b554680facf3f9530548c/payload_test.csv",
+    "sha256": "d8015e256ce4499c8ac7a8be8dd25de6487cf018601edf1a03a408a2c8f0e39d"
+  },
+  "csic_normal": {
+    "url": "https://raw.githubusercontent.com/msudol/Web-Application-Attack-Datasets/424c6e1c1951570473d9d6c0227eaaac6fdd6d02/OriginalDataSets/csic_2010/normalTrafficTest.txt",
+    "sha256": "f05dfc312d5d14fd1ed8371de27a9e4deab3dc09265f5d7f9df2643df8385089"
+  },
+  "csic_mixed": {
+    "url": "https://raw.githubusercontent.com/msudol/Web-Application-Attack-Datasets/424c6e1c1951570473d9d6c0227eaaac6fdd6d02/OriginalDataSets/csic_2010/anomalousTrafficTest.txt",
+    "sha256": "12fa4f0d496ceb859bb2652abf7f0f0ed8c59e1d9ce501b8a9a0ef38a625c046"
+  },
+  "patt_union": {
+    "url": "https://raw.githubusercontent.com/swisskyrepo/PayloadsAllTheThings/08ea40e77db3f42ef8f20c65196f3936a19b6c86/SQL%20Injection/Intruder/Generic_UnionSelect.txt",
+    "sha256": "97c0c29b5a7dd86522968f697aa945c99279a46bcfdc23abc91380b5843ddf10"
+  },
+  "patt_time": {
+    "url": "https://raw.githubusercontent.com/swisskyrepo/PayloadsAllTheThings/08ea40e77db3f42ef8f20c65196f3936a19b6c86/SQL%20Injection/Intruder/Generic_TimeBased.txt",
+    "sha256": "5151d74486f125e2cea74c5a4883036680892f36df2bd9aaa40fa42ecacda810"
+  },
+  "patt_error": {
+    "url": "https://raw.githubusercontent.com/swisskyrepo/PayloadsAllTheThings/08ea40e77db3f42ef8f20c65196f3936a19b6c86/SQL%20Injection/Intruder/Generic_ErrorBased.txt",
+    "sha256": "0db851ce365ffa9042b0609f692abc5e06e39c1af175503f12a9ae58e2459b32"
+  },
+  "secs_boolean_blind": {
+    "url": "https://raw.githubusercontent.com/danielmiessler/SecLists/abe37a24be7dd50d676840c9f63dca87de5117f8/Fuzzing/Databases/SQLi/sqlmap-risk-classified/Low-Risk-Payloads/boolean_blind.txt",
+    "sha256": "1191ac1464b471f5e8b22462bd85926e46fe30ebf062cc1f2bc1a90914a4c2dc"
+  },
+  "secs_time_blind": {
+    "url": "https://raw.githubusercontent.com/danielmiessler/SecLists/abe37a24be7dd50d676840c9f63dca87de5117f8/Fuzzing/Databases/SQLi/sqlmap-risk-classified/Low-Risk-Payloads/time_blind.txt",
+    "sha256": "11b469726538bbd46713fe04ddac710fd8adccb47d4de30c7de1982145efec9b"
+  },
+  "secs_error_based": {
+    "url": "https://raw.githubusercontent.com/danielmiessler/SecLists/abe37a24be7dd50d676840c9f63dca87de5117f8/Fuzzing/Databases/SQLi/sqlmap-risk-classified/Low-Risk-Payloads/error_based.txt",
+    "sha256": "b87234b9266f87c8867e58aa320e43e53ea51ef45870e52a3a69a08138080ee8"
+  },
+  "secs_stacked_queries": {
+    "url": "https://raw.githubusercontent.com/danielmiessler/SecLists/abe37a24be7dd50d676840c9f63dca87de5117f8/Fuzzing/Databases/SQLi/sqlmap-risk-classified/Low-Risk-Payloads/stacked_queries.txt",
+    "sha256": "5f1dc1eb0fdb9988c0dbeaaf295b5ff113870682bb2bb26be444642e44ce9206"
+  },
+  "secs_inline_query": {
+    "url": "https://raw.githubusercontent.com/danielmiessler/SecLists/abe37a24be7dd50d676840c9f63dca87de5117f8/Fuzzing/Databases/SQLi/sqlmap-risk-classified/Low-Risk-Payloads/inline_query.txt",
+    "sha256": "f707db25829993b4c0975344728b588d670a20be329219608280dec1727c2fa7"
+  },
+  "kaggle": {
+    "url": "https://www.kaggle.com/api/v1/datasets/download/sajid576/sql-injection-dataset?datasetVersionNumber=1",
+    "member": "Modified_SQL_Dataset.csv",
+    "sha256": "60af1d160dcc5c3f61440dc8f0c019e8898243951e283402857c10294c6f5cc5"
+  }
+}

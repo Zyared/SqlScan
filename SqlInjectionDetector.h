@@ -1,5 +1,6 @@
 #pragma once
 #include <cstddef>
+#include <functional>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -50,6 +51,13 @@ struct LineScore {
     std::size_t line;
     int score;
     bool suspicious;
+    bool highRisk = false;
+};
+
+struct ScoreContribution {
+    std::string pattern;
+    int weight;
+    std::size_t occurrences;
 };
 
 struct DetectionReport {
@@ -59,10 +67,14 @@ struct DetectionReport {
     std::string normalizedInput;
     std::vector<DetectionHit> hits;
     std::vector<LineScore> lines;
+    std::vector<ScoreContribution> contributions;
     bool inputTruncated = false;
     std::size_t originalInputBytes = 0;
     std::size_t analyzedInputBytes = 0;
     std::size_t totalHits = 0;
+    // Only dense reports need a rule snapshot to enumerate details beyond the preview.
+    std::vector<PatternRule> replayRules;
+    void ForEachHit(const std::function<void(const DetectionHit &)> &visit) const;
 };
 
 class SqlInjectionDetector {

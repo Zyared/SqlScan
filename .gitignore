@@ -16,3 +16,7 @@ Release/
 
 # Claude Code
 .claude/
+
+# Python verification tools
+__pycache__/
+*.pyc

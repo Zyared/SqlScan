@@ -22,8 +22,17 @@ with tempfile.TemporaryDirectory(prefix="sqlscan-csv-") as temp:
     original = src.read_bytes()
     assert run('--batch', src, '--out', src).returncode != 0 and src.read_bytes() == original
     good = out.read_bytes()
-    for invalid in ['label\n0\n', 'text,label\n"unterminated\n', 'text,label\na,b,c\n']:
+    for invalid in ['text,text,label\nx,y,0\n', 'text,label,label\nx,0,1\n', 'label\n0\n', 'text,label\n"unterminated\n', 'text,label\na,b,c\n']:
         src.write_text(invalid, encoding='utf-8')
         assert run('--batch', src, '--out', out).returncode != 0 and out.read_bytes() == good
     assert run('--unknown').returncode != 0
+    # Concurrent writers must publish one complete result. A hard link to the input must be rejected.
+    import os
+    src.write_bytes(original)
+    alias=folder/'alias.csv'
+    os.link(src,alias)
+    assert run('--batch',src,'--out',alias).returncode != 0 and src.read_bytes()==original
+    shared=folder/'concurrent.csv'
+    jobs=[subprocess.Popen([exe,'--batch',src,'--out',shared]) for _ in range(8)]
+    assert all(job.wait(15)==0 for job in jobs) and shared.read_bytes()==good
 print('Batch passed: Unicode paths, BOM, quoted multiline fields, empty input, validation and atomic output')

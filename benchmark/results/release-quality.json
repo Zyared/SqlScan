@@ -1,0 +1,1884 @@
+{
+  "sha256": {
+    "SqlScan.exe": "b9c7b4085d5d2ad579590785fb1e92ef570de54516ea9f535bd86ca4982e7c49",
+    "baseline.exe": "8e29363ed10294878c458e2033715095b8486793a46eada86e43b1be2bfd1b3f",
+    "crs942.exe": "2f7bf4d9acf98e1e65bb9a872dd24b88d5e817d210bfd17a087d359684af33ee",
+    "libinjection.dll": "6829880fc16214e9e6977d8c41d9aa6ea3beba957f99cc47ad9e708a96815cb7"
+  },
+  "datasets": {
+    "http": {
+      "SqlScan 1.0": {
+        "rows": 10051,
+        "flagged": 2029,
+        "TP": 2028,
+        "FP": 1,
+        "TN": 6433,
+        "FN": 1589,
+        "precision": 0.999507,
+        "recall": 0.560686,
+        "FPR": 0.000155,
+        "F1": 0.718385,
+        "groups": {
+          "numeric": {
+            "rows": 1439,
+            "flagged": 0,
+            "TP": 0,
+            "FP": 0,
+            "TN": 1439,
+            "FN": 0,
+            "precision": null,
+            "recall": null,
+            "FPR": 0.0,
+            "F1": null
+          },
+          "other benign text": {
+            "rows": 4037,
+            "flagged": 0,
+            "TP": 0,
+            "FP": 0,
+            "TN": 4037,
+            "FN": 0,
+            "precision": null,
+            "recall": null,
+            "FPR": 0.0,
+            "F1": null
+          },
+          "punctuation or markup": {
+            "rows": 958,
+            "flagged": 1,
+            "TP": 0,
+            "FP": 1,
+            "TN": 957,
+            "FN": 0,
+            "precision": 0.0,
+            "recall": null,
+            "FPR": 0.001044,
+            "F1": null
+          },
+          "SQLi – unspecified": {
+            "rows": 3617,
+            "flagged": 2028,
+            "TP": 2028,
+            "FP": 0,
+            "TN": 0,
+            "FN": 1589,
+            "precision": 1.0,
+            "recall": 0.560686,
+            "FPR": null,
+            "F1": 0.718512
+          }
+        }
+      },
+      "SqlScan 2.0": {
+        "rows": 10051,
+        "flagged": 2029,
+        "TP": 2028,
+        "FP": 1,
+        "TN": 6433,
+        "FN": 1589,
+        "precision": 0.999507,
+        "recall": 0.560686,
+        "FPR": 0.000155,
+        "F1": 0.718385,
+        "groups": {
+          "numeric": {
+            "rows": 1439,
+            "flagged": 0,
+            "TP": 0,
+            "FP": 0,
+            "TN": 1439,
+            "FN": 0,
+            "precision": null,
+            "recall": null,
+            "FPR": 0.0,
+            "F1": null
+          },
+          "other benign text": {
+            "rows": 4037,
+            "flagged": 0,
+            "TP": 0,
+            "FP": 0,
+            "TN": 4037,
+            "FN": 0,
+            "precision": null,
+            "recall": null,
+            "FPR": 0.0,
+            "F1": null
+          },
+          "punctuation or markup": {
+            "rows": 958,
+            "flagged": 1,
+            "TP": 0,
+            "FP": 1,
+            "TN": 957,
+            "FN": 0,
+            "precision": 0.0,
+            "recall": null,
+            "FPR": 0.001044,
+            "F1": null
+          },
+          "SQLi – unspecified": {
+            "rows": 3617,
+            "flagged": 2028,
+            "TP": 2028,
+            "FP": 0,
+            "TN": 0,
+            "FN": 1589,
+            "precision": 1.0,
+            "recall": 0.560686,
+            "FPR": null,
+            "F1": 0.718512
+          }
+        }
+      },
+      "libinjection": {
+        "rows": 10051,
+        "flagged": 3504,
+        "TP": 3504,
+        "FP": 0,
+        "TN": 6434,
+        "FN": 113,
+        "precision": 1.0,
+        "recall": 0.968759,
+        "FPR": 0.0,
+        "F1": 0.984131,
+        "groups": {
+          "numeric": {
+            "rows": 1439,
+            "flagged": 0,
+            "TP": 0,
+            "FP": 0,
+            "TN": 1439,
+            "FN": 0,
+            "precision": null,
+            "recall": null,
+            "FPR": 0.0,
+            "F1": null
+          },
+          "other benign text": {
+            "rows": 4037,
+            "flagged": 0,
+            "TP": 0,
+            "FP": 0,
+            "TN": 4037,
+            "FN": 0,
+            "precision": null,
+            "recall": null,
+            "FPR": 0.0,
+            "F1": null
+          },
+          "punctuation or markup": {
+            "rows": 958,
+            "flagged": 0,
+            "TP": 0,
+            "FP": 0,
+            "TN": 958,
+            "FN": 0,
+            "precision": null,
+            "recall": null,
+            "FPR": 0.0,
+            "F1": null
+          },
+          "SQLi – unspecified": {
+            "rows": 3617,
+            "flagged": 3504,
+            "TP": 3504,
+            "FP": 0,
+            "TN": 0,
+            "FN": 113,
+            "precision": 1.0,
+            "recall": 0.968759,
+            "FPR": null,
+            "F1": 0.984131
+          }
+        }
+      },
+      "OWASP CRS 942": {
+        "rows": 10051,
+        "flagged": 3612,
+        "TP": 3612,
+        "FP": 0,
+        "TN": 6434,
+        "FN": 5,
+        "precision": 1.0,
+        "recall": 0.998618,
+        "FPR": 0.0,
+        "F1": 0.999308,
+        "groups": {
+          "numeric": {
+            "rows": 1439,
+            "flagged": 0,
+            "TP": 0,
+            "FP": 0,
+            "TN": 1439,
+            "FN": 0,
+            "precision": null,
+            "recall": null,
+            "FPR": 0.0,
+            "F1": null
+          },
+          "other benign text": {
+            "rows": 4037,
+            "flagged": 0,
+            "TP": 0,
+            "FP": 0,
+            "TN": 4037,
+            "FN": 0,
+            "precision": null,
+            "recall": null,
+            "FPR": 0.0,
+            "F1": null
+          },
+          "punctuation or markup": {
+            "rows": 958,
+            "flagged": 0,
+            "TP": 0,
+            "FP": 0,
+            "TN": 958,
+            "FN": 0,
+            "precision": null,
+            "recall": null,
+            "FPR": 0.0,
+            "F1": null
+          },
+          "SQLi – unspecified": {
+            "rows": 3617,
+            "flagged": 3612,
+            "TP": 3612,
+            "FP": 0,
+            "TN": 0,
+            "FN": 5,
+            "precision": 1.0,
+            "recall": 0.998618,
+            "FPR": null,
+            "F1": 0.999308
+          }
+        }
+      }
+    },
+    "http_balanced_200": {
+      "SqlScan 1.0": {
+        "rows": 200,
+        "flagged": 55,
+        "TP": 55,
+        "FP": 0,
+        "TN": 100,
+        "FN": 45,
+        "precision": 1.0,
+        "recall": 0.55,
+        "FPR": 0.0,
+        "F1": 0.709677,
+        "groups": {
+          "other benign text": {
+            "rows": 60,
+            "flagged": 0,
+            "TP": 0,
+            "FP": 0,
+            "TN": 60,
+            "FN": 0,
+            "precision": null,
+            "recall": null,
+            "FPR": 0.0,
+            "F1": null
+          },
+          "numeric": {
+            "rows": 21,
+            "flagged": 0,
+            "TP": 0,
+            "FP": 0,
+            "TN": 21,
+            "FN": 0,
+            "precision": null,
+            "recall": null,
+            "FPR": 0.0,
+            "F1": null
+          },
+          "punctuation or markup": {
+            "rows": 19,
+            "flagged": 0,
+            "TP": 0,
+            "FP": 0,
+            "TN": 19,
+            "FN": 0,
+            "precision": null,
+            "recall": null,
+            "FPR": 0.0,
+            "F1": null
+          },
+          "SQLi – unspecified": {
+            "rows": 100,
+            "flagged": 55,
+            "TP": 55,
+            "FP": 0,
+            "TN": 0,
+            "FN": 45,
+            "precision": 1.0,
+            "recall": 0.55,
+            "FPR": null,
+            "F1": 0.709677
+          }
+        }
+      },
+      "SqlScan 2.0": {
+        "rows": 200,
+        "flagged": 55,
+        "TP": 55,
+        "FP": 0,
+        "TN": 100,
+        "FN": 45,
+        "precision": 1.0,
+        "recall": 0.55,
+        "FPR": 0.0,
+        "F1": 0.709677,
+        "groups": {
+          "other benign text": {
+            "rows": 60,
+            "flagged": 0,
+            "TP": 0,
+            "FP": 0,
+            "TN": 60,
+            "FN": 0,
+            "precision": null,
+            "recall": null,
+            "FPR": 0.0,
+            "F1": null
+          },
+          "numeric": {
+            "rows": 21,
+            "flagged": 0,
+            "TP": 0,
+            "FP": 0,
+            "TN": 21,
+            "FN": 0,
+            "precision": null,
+            "recall": null,
+            "FPR": 0.0,
+            "F1": null
+          },
+          "punctuation or markup": {
+            "rows": 19,
+            "flagged": 0,
+            "TP": 0,
+            "FP": 0,
+            "TN": 19,
+            "FN": 0,
+            "precision": null,
+            "recall": null,
+            "FPR": 0.0,
+            "F1": null
+          },
+          "SQLi – unspecified": {
+            "rows": 100,
+            "flagged": 55,
+            "TP": 55,
+            "FP": 0,
+            "TN": 0,
+            "FN": 45,
+            "precision": 1.0,
+            "recall": 0.55,
+            "FPR": null,
+            "F1": 0.709677
+          }
+        }
+      },
+      "libinjection": {
+        "rows": 200,
+        "flagged": 98,
+        "TP": 98,
+        "FP": 0,
+        "TN": 100,
+        "FN": 2,
+        "precision": 1.0,
+        "recall": 0.98,
+        "FPR": 0.0,
+        "F1": 0.989899,
+        "groups": {
+          "other benign text": {
+            "rows": 60,
+            "flagged": 0,
+            "TP": 0,
+            "FP": 0,
+            "TN": 60,
+            "FN": 0,
+            "precision": null,
+            "recall": null,
+            "FPR": 0.0,
+            "F1": null
+          },
+          "numeric": {
+            "rows": 21,
+            "flagged": 0,
+            "TP": 0,
+            "FP": 0,
+            "TN": 21,
+            "FN": 0,
+            "precision": null,
+            "recall": null,
+            "FPR": 0.0,
+            "F1": null
+          },
+          "punctuation or markup": {
+            "rows": 19,
+            "flagged": 0,
+            "TP": 0,
+            "FP": 0,
+            "TN": 19,
+            "FN": 0,
+            "precision": null,
+            "recall": null,
+            "FPR": 0.0,
+            "F1": null
+          },
+          "SQLi – unspecified": {
+            "rows": 100,
+            "flagged": 98,
+            "TP": 98,
+            "FP": 0,
+            "TN": 0,
+            "FN": 2,
+            "precision": 1.0,
+            "recall": 0.98,
+            "FPR": null,
+            "F1": 0.989899
+          }
+        }
+      },
+      "OWASP CRS 942": {
+        "rows": 200,
+        "flagged": 98,
+        "TP": 98,
+        "FP": 0,
+        "TN": 100,
+        "FN": 2,
+        "precision": 1.0,
+        "recall": 0.98,
+        "FPR": 0.0,
+        "F1": 0.989899,
+        "groups": {
+          "other benign text": {
+            "rows": 60,
+            "flagged": 0,
+            "TP": 0,
+            "FP": 0,
+            "TN": 60,
+            "FN": 0,
+            "precision": null,
+            "recall": null,
+            "FPR": 0.0,
+            "F1": null
+          },
+          "numeric": {
+            "rows": 21,
+            "flagged": 0,
+            "TP": 0,
+            "FP": 0,
+            "TN": 21,
+            "FN": 0,
+            "precision": null,
+            "recall": null,
+            "FPR": 0.0,
+            "F1": null
+          },
+          "punctuation or markup": {
+            "rows": 19,
+            "flagged": 0,
+            "TP": 0,
+            "FP": 0,
+            "TN": 19,
+            "FN": 0,
+            "precision": null,
+            "recall": null,
+            "FPR": 0.0,
+            "F1": null
+          },
+          "SQLi – unspecified": {
+            "rows": 100,
+            "flagged": 98,
+            "TP": 98,
+            "FP": 0,
+            "TN": 0,
+            "FN": 2,
+            "precision": 1.0,
+            "recall": 0.98,
+            "FPR": null,
+            "F1": 0.989899
+          }
+        }
+      }
+    },
+    "csic_normal": {
+      "SqlScan 1.0": {
+        "rows": 36000,
+        "flagged": 0,
+        "TP": 0,
+        "FP": 0,
+        "TN": 36000,
+        "FN": 0,
+        "precision": null,
+        "recall": null,
+        "FPR": 0.0,
+        "F1": null,
+        "groups": {
+          "GET": {
+            "rows": 28000,
+            "flagged": 0,
+            "TP": 0,
+            "FP": 0,
+            "TN": 28000,
+            "FN": 0,
+            "precision": null,
+            "recall": null,
+            "FPR": 0.0,
+            "F1": null
+          },
+          "POST": {
+            "rows": 8000,
+            "flagged": 0,
+            "TP": 0,
+            "FP": 0,
+            "TN": 8000,
+            "FN": 0,
+            "precision": null,
+            "recall": null,
+            "FPR": 0.0,
+            "F1": null
+          }
+        }
+      },
+      "SqlScan 2.0": {
+        "rows": 36000,
+        "flagged": 0,
+        "TP": 0,
+        "FP": 0,
+        "TN": 36000,
+        "FN": 0,
+        "precision": null,
+        "recall": null,
+        "FPR": 0.0,
+        "F1": null,
+        "groups": {
+          "GET": {
+            "rows": 28000,
+            "flagged": 0,
+            "TP": 0,
+            "FP": 0,
+            "TN": 28000,
+            "FN": 0,
+            "precision": null,
+            "recall": null,
+            "FPR": 0.0,
+            "F1": null
+          },
+          "POST": {
+            "rows": 8000,
+            "flagged": 0,
+            "TP": 0,
+            "FP": 0,
+            "TN": 8000,
+            "FN": 0,
+            "precision": null,
+            "recall": null,
+            "FPR": 0.0,
+            "F1": null
+          }
+        }
+      },
+      "libinjection": {
+        "rows": 36000,
+        "flagged": 0,
+        "TP": 0,
+        "FP": 0,
+        "TN": 36000,
+        "FN": 0,
+        "precision": null,
+        "recall": null,
+        "FPR": 0.0,
+        "F1": null,
+        "groups": {
+          "GET": {
+            "rows": 28000,
+            "flagged": 0,
+            "TP": 0,
+            "FP": 0,
+            "TN": 28000,
+            "FN": 0,
+            "precision": null,
+            "recall": null,
+            "FPR": 0.0,
+            "F1": null
+          },
+          "POST": {
+            "rows": 8000,
+            "flagged": 0,
+            "TP": 0,
+            "FP": 0,
+            "TN": 8000,
+            "FN": 0,
+            "precision": null,
+            "recall": null,
+            "FPR": 0.0,
+            "F1": null
+          }
+        }
+      },
+      "OWASP CRS 942": {
+        "rows": 36000,
+        "flagged": 4,
+        "TP": 0,
+        "FP": 4,
+        "TN": 35996,
+        "FN": 0,
+        "precision": 0.0,
+        "recall": null,
+        "FPR": 0.000111,
+        "F1": null,
+        "groups": {
+          "GET": {
+            "rows": 28000,
+            "flagged": 2,
+            "TP": 0,
+            "FP": 2,
+            "TN": 27998,
+            "FN": 0,
+            "precision": 0.0,
+            "recall": null,
+            "FPR": 7.1e-05,
+            "F1": null
+          },
+          "POST": {
+            "rows": 8000,
+            "flagged": 2,
+            "TP": 0,
+            "FP": 2,
+            "TN": 7998,
+            "FN": 0,
+            "precision": 0.0,
+            "recall": null,
+            "FPR": 0.00025,
+            "F1": null
+          }
+        }
+      }
+    },
+    "csic_mixed": {
+      "SqlScan 1.0": {
+        "rows": 25065,
+        "flagged": 1828,
+        "groups": {
+          "GET": {
+            "rows": 15088,
+            "flagged": 914
+          },
+          "POST": {
+            "rows": 9580,
+            "flagged": 914
+          },
+          "PUT": {
+            "rows": 397,
+            "flagged": 0
+          }
+        }
+      },
+      "SqlScan 2.0": {
+        "rows": 25065,
+        "flagged": 2032,
+        "groups": {
+          "GET": {
+            "rows": 15088,
+            "flagged": 1016
+          },
+          "POST": {
+            "rows": 9580,
+            "flagged": 1016
+          },
+          "PUT": {
+            "rows": 397,
+            "flagged": 0
+          }
+        }
+      },
+      "libinjection": {
+        "rows": 25065,
+        "flagged": 0,
+        "groups": {
+          "GET": {
+            "rows": 15088,
+            "flagged": 0
+          },
+          "POST": {
+            "rows": 9580,
+            "flagged": 0
+          },
+          "PUT": {
+            "rows": 397,
+            "flagged": 0
+          }
+        }
+      },
+      "OWASP CRS 942": {
+        "rows": 25065,
+        "flagged": 1656,
+        "groups": {
+          "GET": {
+            "rows": 15088,
+            "flagged": 828
+          },
+          "POST": {
+            "rows": 9580,
+            "flagged": 828
+          },
+          "PUT": {
+            "rows": 397,
+            "flagged": 0
+          }
+        }
+      }
+    },
+    "patt_union": {
+      "SqlScan 1.0": {
+        "rows": 424,
+        "flagged": 261,
+        "TP": 261,
+        "FP": 0,
+        "TN": 0,
+        "FN": 163,
+        "precision": 1.0,
+        "recall": 0.615566,
+        "FPR": null,
+        "F1": 0.762044,
+        "groups": {
+          "UNION": {
+            "rows": 424,
+            "flagged": 261,
+            "TP": 261,
+            "FP": 0,
+            "TN": 0,
+            "FN": 163,
+            "precision": 1.0,
+            "recall": 0.615566,
+            "FPR": null,
+            "F1": 0.762044
+          }
+        }
+      },
+      "SqlScan 2.0": {
+        "rows": 424,
+        "flagged": 261,
+        "TP": 261,
+        "FP": 0,
+        "TN": 0,
+        "FN": 163,
+        "precision": 1.0,
+        "recall": 0.615566,
+        "FPR": null,
+        "F1": 0.762044,
+        "groups": {
+          "UNION": {
+            "rows": 424,
+            "flagged": 261,
+            "TP": 261,
+            "FP": 0,
+            "TN": 0,
+            "FN": 163,
+            "precision": 1.0,
+            "recall": 0.615566,
+            "FPR": null,
+            "F1": 0.762044
+          }
+        }
+      },
+      "libinjection": {
+        "rows": 424,
+        "flagged": 213,
+        "TP": 213,
+        "FP": 0,
+        "TN": 0,
+        "FN": 211,
+        "precision": 1.0,
+        "recall": 0.502358,
+        "FPR": null,
+        "F1": 0.66876,
+        "groups": {
+          "UNION": {
+            "rows": 424,
+            "flagged": 213,
+            "TP": 213,
+            "FP": 0,
+            "TN": 0,
+            "FN": 211,
+            "precision": 1.0,
+            "recall": 0.502358,
+            "FPR": null,
+            "F1": 0.66876
+          }
+        }
+      },
+      "OWASP CRS 942": {
+        "rows": 424,
+        "flagged": 424,
+        "TP": 424,
+        "FP": 0,
+        "TN": 0,
+        "FN": 0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "FPR": null,
+        "F1": 1.0,
+        "groups": {
+          "UNION": {
+            "rows": 424,
+            "flagged": 424,
+            "TP": 424,
+            "FP": 0,
+            "TN": 0,
+            "FN": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "FPR": null,
+            "F1": 1.0
+          }
+        }
+      }
+    },
+    "patt_time": {
+      "SqlScan 1.0": {
+        "rows": 104,
+        "flagged": 95,
+        "TP": 95,
+        "FP": 0,
+        "TN": 0,
+        "FN": 9,
+        "precision": 1.0,
+        "recall": 0.913462,
+        "FPR": null,
+        "F1": 0.954774,
+        "groups": {
+          "time-based": {
+            "rows": 104,
+            "flagged": 95,
+            "TP": 95,
+            "FP": 0,
+            "TN": 0,
+            "FN": 9,
+            "precision": 1.0,
+            "recall": 0.913462,
+            "FPR": null,
+            "F1": 0.954774
+          }
+        }
+      },
+      "SqlScan 2.0": {
+        "rows": 104,
+        "flagged": 95,
+        "TP": 95,
+        "FP": 0,
+        "TN": 0,
+        "FN": 9,
+        "precision": 1.0,
+        "recall": 0.913462,
+        "FPR": null,
+        "F1": 0.954774,
+        "groups": {
+          "time-based": {
+            "rows": 104,
+            "flagged": 95,
+            "TP": 95,
+            "FP": 0,
+            "TN": 0,
+            "FN": 9,
+            "precision": 1.0,
+            "recall": 0.913462,
+            "FPR": null,
+            "F1": 0.954774
+          }
+        }
+      },
+      "libinjection": {
+        "rows": 104,
+        "flagged": 86,
+        "TP": 86,
+        "FP": 0,
+        "TN": 0,
+        "FN": 18,
+        "precision": 1.0,
+        "recall": 0.826923,
+        "FPR": null,
+        "F1": 0.905263,
+        "groups": {
+          "time-based": {
+            "rows": 104,
+            "flagged": 86,
+            "TP": 86,
+            "FP": 0,
+            "TN": 0,
+            "FN": 18,
+            "precision": 1.0,
+            "recall": 0.826923,
+            "FPR": null,
+            "F1": 0.905263
+          }
+        }
+      },
+      "OWASP CRS 942": {
+        "rows": 104,
+        "flagged": 103,
+        "TP": 103,
+        "FP": 0,
+        "TN": 0,
+        "FN": 1,
+        "precision": 1.0,
+        "recall": 0.990385,
+        "FPR": null,
+        "F1": 0.995169,
+        "groups": {
+          "time-based": {
+            "rows": 104,
+            "flagged": 103,
+            "TP": 103,
+            "FP": 0,
+            "TN": 0,
+            "FN": 1,
+            "precision": 1.0,
+            "recall": 0.990385,
+            "FPR": null,
+            "F1": 0.995169
+          }
+        }
+      }
+    },
+    "patt_error": {
+      "SqlScan 1.0": {
+        "rows": 154,
+        "flagged": 47,
+        "TP": 47,
+        "FP": 0,
+        "TN": 0,
+        "FN": 107,
+        "precision": 1.0,
+        "recall": 0.305195,
+        "FPR": null,
+        "F1": 0.467662,
+        "groups": {
+          "error-based": {
+            "rows": 154,
+            "flagged": 47,
+            "TP": 47,
+            "FP": 0,
+            "TN": 0,
+            "FN": 107,
+            "precision": 1.0,
+            "recall": 0.305195,
+            "FPR": null,
+            "F1": 0.467662
+          }
+        }
+      },
+      "SqlScan 2.0": {
+        "rows": 154,
+        "flagged": 47,
+        "TP": 47,
+        "FP": 0,
+        "TN": 0,
+        "FN": 107,
+        "precision": 1.0,
+        "recall": 0.305195,
+        "FPR": null,
+        "F1": 0.467662,
+        "groups": {
+          "error-based": {
+            "rows": 154,
+            "flagged": 47,
+            "TP": 47,
+            "FP": 0,
+            "TN": 0,
+            "FN": 107,
+            "precision": 1.0,
+            "recall": 0.305195,
+            "FPR": null,
+            "F1": 0.467662
+          }
+        }
+      },
+      "libinjection": {
+        "rows": 154,
+        "flagged": 8,
+        "TP": 8,
+        "FP": 0,
+        "TN": 0,
+        "FN": 146,
+        "precision": 1.0,
+        "recall": 0.051948,
+        "FPR": null,
+        "F1": 0.098765,
+        "groups": {
+          "error-based": {
+            "rows": 154,
+            "flagged": 8,
+            "TP": 8,
+            "FP": 0,
+            "TN": 0,
+            "FN": 146,
+            "precision": 1.0,
+            "recall": 0.051948,
+            "FPR": null,
+            "F1": 0.098765
+          }
+        }
+      },
+      "OWASP CRS 942": {
+        "rows": 154,
+        "flagged": 17,
+        "TP": 17,
+        "FP": 0,
+        "TN": 0,
+        "FN": 137,
+        "precision": 1.0,
+        "recall": 0.11039,
+        "FPR": null,
+        "F1": 0.19883,
+        "groups": {
+          "error-based": {
+            "rows": 154,
+            "flagged": 17,
+            "TP": 17,
+            "FP": 0,
+            "TN": 0,
+            "FN": 137,
+            "precision": 1.0,
+            "recall": 0.11039,
+            "FPR": null,
+            "F1": 0.19883
+          }
+        }
+      }
+    },
+    "secs_boolean_blind": {
+      "SqlScan 1.0": {
+        "rows": 56,
+        "flagged": 4,
+        "TP": 4,
+        "FP": 0,
+        "TN": 0,
+        "FN": 52,
+        "precision": 1.0,
+        "recall": 0.071429,
+        "FPR": null,
+        "F1": 0.133333,
+        "groups": {
+          "boolean-blind": {
+            "rows": 56,
+            "flagged": 4,
+            "TP": 4,
+            "FP": 0,
+            "TN": 0,
+            "FN": 52,
+            "precision": 1.0,
+            "recall": 0.071429,
+            "FPR": null,
+            "F1": 0.133333
+          }
+        }
+      },
+      "SqlScan 2.0": {
+        "rows": 56,
+        "flagged": 4,
+        "TP": 4,
+        "FP": 0,
+        "TN": 0,
+        "FN": 52,
+        "precision": 1.0,
+        "recall": 0.071429,
+        "FPR": null,
+        "F1": 0.133333,
+        "groups": {
+          "boolean-blind": {
+            "rows": 56,
+            "flagged": 4,
+            "TP": 4,
+            "FP": 0,
+            "TN": 0,
+            "FN": 52,
+            "precision": 1.0,
+            "recall": 0.071429,
+            "FPR": null,
+            "F1": 0.133333
+          }
+        }
+      },
+      "libinjection": {
+        "rows": 56,
+        "flagged": 22,
+        "TP": 22,
+        "FP": 0,
+        "TN": 0,
+        "FN": 34,
+        "precision": 1.0,
+        "recall": 0.392857,
+        "FPR": null,
+        "F1": 0.564103,
+        "groups": {
+          "boolean-blind": {
+            "rows": 56,
+            "flagged": 22,
+            "TP": 22,
+            "FP": 0,
+            "TN": 0,
+            "FN": 34,
+            "precision": 1.0,
+            "recall": 0.392857,
+            "FPR": null,
+            "F1": 0.564103
+          }
+        }
+      },
+      "OWASP CRS 942": {
+        "rows": 56,
+        "flagged": 48,
+        "TP": 48,
+        "FP": 0,
+        "TN": 0,
+        "FN": 8,
+        "precision": 1.0,
+        "recall": 0.857143,
+        "FPR": null,
+        "F1": 0.923077,
+        "groups": {
+          "boolean-blind": {
+            "rows": 56,
+            "flagged": 48,
+            "TP": 48,
+            "FP": 0,
+            "TN": 0,
+            "FN": 8,
+            "precision": 1.0,
+            "recall": 0.857143,
+            "FPR": null,
+            "F1": 0.923077
+          }
+        }
+      }
+    },
+    "secs_time_blind": {
+      "SqlScan 1.0": {
+        "rows": 21,
+        "flagged": 16,
+        "TP": 16,
+        "FP": 0,
+        "TN": 0,
+        "FN": 5,
+        "precision": 1.0,
+        "recall": 0.761905,
+        "FPR": null,
+        "F1": 0.864865,
+        "groups": {
+          "time-based": {
+            "rows": 21,
+            "flagged": 16,
+            "TP": 16,
+            "FP": 0,
+            "TN": 0,
+            "FN": 5,
+            "precision": 1.0,
+            "recall": 0.761905,
+            "FPR": null,
+            "F1": 0.864865
+          }
+        }
+      },
+      "SqlScan 2.0": {
+        "rows": 21,
+        "flagged": 16,
+        "TP": 16,
+        "FP": 0,
+        "TN": 0,
+        "FN": 5,
+        "precision": 1.0,
+        "recall": 0.761905,
+        "FPR": null,
+        "F1": 0.864865,
+        "groups": {
+          "time-based": {
+            "rows": 21,
+            "flagged": 16,
+            "TP": 16,
+            "FP": 0,
+            "TN": 0,
+            "FN": 5,
+            "precision": 1.0,
+            "recall": 0.761905,
+            "FPR": null,
+            "F1": 0.864865
+          }
+        }
+      },
+      "libinjection": {
+        "rows": 21,
+        "flagged": 10,
+        "TP": 10,
+        "FP": 0,
+        "TN": 0,
+        "FN": 11,
+        "precision": 1.0,
+        "recall": 0.47619,
+        "FPR": null,
+        "F1": 0.645161,
+        "groups": {
+          "time-based": {
+            "rows": 21,
+            "flagged": 10,
+            "TP": 10,
+            "FP": 0,
+            "TN": 0,
+            "FN": 11,
+            "precision": 1.0,
+            "recall": 0.47619,
+            "FPR": null,
+            "F1": 0.645161
+          }
+        }
+      },
+      "OWASP CRS 942": {
+        "rows": 21,
+        "flagged": 21,
+        "TP": 21,
+        "FP": 0,
+        "TN": 0,
+        "FN": 0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "FPR": null,
+        "F1": 1.0,
+        "groups": {
+          "time-based": {
+            "rows": 21,
+            "flagged": 21,
+            "TP": 21,
+            "FP": 0,
+            "TN": 0,
+            "FN": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "FPR": null,
+            "F1": 1.0
+          }
+        }
+      }
+    },
+    "secs_error_based": {
+      "SqlScan 1.0": {
+        "rows": 52,
+        "flagged": 2,
+        "TP": 2,
+        "FP": 0,
+        "TN": 0,
+        "FN": 50,
+        "precision": 1.0,
+        "recall": 0.038462,
+        "FPR": null,
+        "F1": 0.074074,
+        "groups": {
+          "error-based": {
+            "rows": 52,
+            "flagged": 2,
+            "TP": 2,
+            "FP": 0,
+            "TN": 0,
+            "FN": 50,
+            "precision": 1.0,
+            "recall": 0.038462,
+            "FPR": null,
+            "F1": 0.074074
+          }
+        }
+      },
+      "SqlScan 2.0": {
+        "rows": 52,
+        "flagged": 2,
+        "TP": 2,
+        "FP": 0,
+        "TN": 0,
+        "FN": 50,
+        "precision": 1.0,
+        "recall": 0.038462,
+        "FPR": null,
+        "F1": 0.074074,
+        "groups": {
+          "error-based": {
+            "rows": 52,
+            "flagged": 2,
+            "TP": 2,
+            "FP": 0,
+            "TN": 0,
+            "FN": 50,
+            "precision": 1.0,
+            "recall": 0.038462,
+            "FPR": null,
+            "F1": 0.074074
+          }
+        }
+      },
+      "libinjection": {
+        "rows": 52,
+        "flagged": 24,
+        "TP": 24,
+        "FP": 0,
+        "TN": 0,
+        "FN": 28,
+        "precision": 1.0,
+        "recall": 0.461538,
+        "FPR": null,
+        "F1": 0.631579,
+        "groups": {
+          "error-based": {
+            "rows": 52,
+            "flagged": 24,
+            "TP": 24,
+            "FP": 0,
+            "TN": 0,
+            "FN": 28,
+            "precision": 1.0,
+            "recall": 0.461538,
+            "FPR": null,
+            "F1": 0.631579
+          }
+        }
+      },
+      "OWASP CRS 942": {
+        "rows": 52,
+        "flagged": 52,
+        "TP": 52,
+        "FP": 0,
+        "TN": 0,
+        "FN": 0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "FPR": null,
+        "F1": 1.0,
+        "groups": {
+          "error-based": {
+            "rows": 52,
+            "flagged": 52,
+            "TP": 52,
+            "FP": 0,
+            "TN": 0,
+            "FN": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "FPR": null,
+            "F1": 1.0
+          }
+        }
+      }
+    },
+    "secs_stacked_queries": {
+      "SqlScan 1.0": {
+        "rows": 9,
+        "flagged": 6,
+        "TP": 6,
+        "FP": 0,
+        "TN": 0,
+        "FN": 3,
+        "precision": 1.0,
+        "recall": 0.666667,
+        "FPR": null,
+        "F1": 0.8,
+        "groups": {
+          "stacked": {
+            "rows": 9,
+            "flagged": 6,
+            "TP": 6,
+            "FP": 0,
+            "TN": 0,
+            "FN": 3,
+            "precision": 1.0,
+            "recall": 0.666667,
+            "FPR": null,
+            "F1": 0.8
+          }
+        }
+      },
+      "SqlScan 2.0": {
+        "rows": 9,
+        "flagged": 6,
+        "TP": 6,
+        "FP": 0,
+        "TN": 0,
+        "FN": 3,
+        "precision": 1.0,
+        "recall": 0.666667,
+        "FPR": null,
+        "F1": 0.8,
+        "groups": {
+          "stacked": {
+            "rows": 9,
+            "flagged": 6,
+            "TP": 6,
+            "FP": 0,
+            "TN": 0,
+            "FN": 3,
+            "precision": 1.0,
+            "recall": 0.666667,
+            "FPR": null,
+            "F1": 0.8
+          }
+        }
+      },
+      "libinjection": {
+        "rows": 9,
+        "flagged": 0,
+        "TP": 0,
+        "FP": 0,
+        "TN": 0,
+        "FN": 9,
+        "precision": null,
+        "recall": 0.0,
+        "FPR": null,
+        "F1": 0.0,
+        "groups": {
+          "stacked": {
+            "rows": 9,
+            "flagged": 0,
+            "TP": 0,
+            "FP": 0,
+            "TN": 0,
+            "FN": 9,
+            "precision": null,
+            "recall": 0.0,
+            "FPR": null,
+            "F1": 0.0
+          }
+        }
+      },
+      "OWASP CRS 942": {
+        "rows": 9,
+        "flagged": 9,
+        "TP": 9,
+        "FP": 0,
+        "TN": 0,
+        "FN": 0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "FPR": null,
+        "F1": 1.0,
+        "groups": {
+          "stacked": {
+            "rows": 9,
+            "flagged": 9,
+            "TP": 9,
+            "FP": 0,
+            "TN": 0,
+            "FN": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "FPR": null,
+            "F1": 1.0
+          }
+        }
+      }
+    },
+    "secs_inline_query": {
+      "SqlScan 1.0": {
+        "rows": 8,
+        "flagged": 0,
+        "TP": 0,
+        "FP": 0,
+        "TN": 0,
+        "FN": 8,
+        "precision": null,
+        "recall": 0.0,
+        "FPR": null,
+        "F1": 0.0,
+        "groups": {
+          "inline": {
+            "rows": 8,
+            "flagged": 0,
+            "TP": 0,
+            "FP": 0,
+            "TN": 0,
+            "FN": 8,
+            "precision": null,
+            "recall": 0.0,
+            "FPR": null,
+            "F1": 0.0
+          }
+        }
+      },
+      "SqlScan 2.0": {
+        "rows": 8,
+        "flagged": 0,
+        "TP": 0,
+        "FP": 0,
+        "TN": 0,
+        "FN": 8,
+        "precision": null,
+        "recall": 0.0,
+        "FPR": null,
+        "F1": 0.0,
+        "groups": {
+          "inline": {
+            "rows": 8,
+            "flagged": 0,
+            "TP": 0,
+            "FP": 0,
+            "TN": 0,
+            "FN": 8,
+            "precision": null,
+            "recall": 0.0,
+            "FPR": null,
+            "F1": 0.0
+          }
+        }
+      },
+      "libinjection": {
+        "rows": 8,
+        "flagged": 8,
+        "TP": 8,
+        "FP": 0,
+        "TN": 0,
+        "FN": 0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "FPR": null,
+        "F1": 1.0,
+        "groups": {
+          "inline": {
+            "rows": 8,
+            "flagged": 8,
+            "TP": 8,
+            "FP": 0,
+            "TN": 0,
+            "FN": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "FPR": null,
+            "F1": 1.0
+          }
+        }
+      },
+      "OWASP CRS 942": {
+        "rows": 8,
+        "flagged": 8,
+        "TP": 8,
+        "FP": 0,
+        "TN": 0,
+        "FN": 0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "FPR": null,
+        "F1": 1.0,
+        "groups": {
+          "inline": {
+            "rows": 8,
+            "flagged": 8,
+            "TP": 8,
+            "FP": 0,
+            "TN": 0,
+            "FN": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "FPR": null,
+            "F1": 1.0
+          }
+        }
+      }
+    },
+    "kaggle": {
+      "SqlScan 1.0": {
+        "rows": 30919,
+        "flagged": 5103,
+        "TP": 4509,
+        "FP": 594,
+        "TN": 18943,
+        "FN": 6873,
+        "precision": 0.883598,
+        "recall": 0.396152,
+        "FPR": 0.030404,
+        "F1": 0.547043,
+        "groups": {
+          "SQLi – unspecified": {
+            "rows": 11382,
+            "flagged": 4509,
+            "TP": 4509,
+            "FP": 0,
+            "TN": 0,
+            "FN": 6873,
+            "precision": 1.0,
+            "recall": 0.396152,
+            "FPR": null,
+            "F1": 0.567491
+          },
+          "other benign text": {
+            "rows": 5040,
+            "flagged": 0,
+            "TP": 0,
+            "FP": 0,
+            "TN": 5040,
+            "FN": 0,
+            "precision": null,
+            "recall": null,
+            "FPR": 0.0,
+            "F1": null
+          },
+          "numeric": {
+            "rows": 1001,
+            "flagged": 0,
+            "TP": 0,
+            "FP": 0,
+            "TN": 1001,
+            "FN": 0,
+            "precision": null,
+            "recall": null,
+            "FPR": 0.0,
+            "F1": null
+          },
+          "punctuation or markup": {
+            "rows": 1917,
+            "flagged": 0,
+            "TP": 0,
+            "FP": 0,
+            "TN": 1917,
+            "FN": 0,
+            "precision": null,
+            "recall": null,
+            "FPR": 0.0,
+            "F1": null
+          },
+          "SQL vocabulary": {
+            "rows": 11579,
+            "flagged": 594,
+            "TP": 0,
+            "FP": 594,
+            "TN": 10985,
+            "FN": 0,
+            "precision": 0.0,
+            "recall": null,
+            "FPR": 0.0513,
+            "F1": null
+          }
+        }
+      },
+      "SqlScan 2.0": {
+        "rows": 30919,
+        "flagged": 5108,
+        "TP": 4512,
+        "FP": 596,
+        "TN": 18941,
+        "FN": 6870,
+        "precision": 0.88332,
+        "recall": 0.396415,
+        "FPR": 0.030506,
+        "F1": 0.547241,
+        "groups": {
+          "SQLi – unspecified": {
+            "rows": 11382,
+            "flagged": 4512,
+            "TP": 4512,
+            "FP": 0,
+            "TN": 0,
+            "FN": 6870,
+            "precision": 1.0,
+            "recall": 0.396415,
+            "FPR": null,
+            "F1": 0.567761
+          },
+          "other benign text": {
+            "rows": 5040,
+            "flagged": 0,
+            "TP": 0,
+            "FP": 0,
+            "TN": 5040,
+            "FN": 0,
+            "precision": null,
+            "recall": null,
+            "FPR": 0.0,
+            "F1": null
+          },
+          "numeric": {
+            "rows": 1001,
+            "flagged": 0,
+            "TP": 0,
+            "FP": 0,
+            "TN": 1001,
+            "FN": 0,
+            "precision": null,
+            "recall": null,
+            "FPR": 0.0,
+            "F1": null
+          },
+          "punctuation or markup": {
+            "rows": 1917,
+            "flagged": 0,
+            "TP": 0,
+            "FP": 0,
+            "TN": 1917,
+            "FN": 0,
+            "precision": null,
+            "recall": null,
+            "FPR": 0.0,
+            "F1": null
+          },
+          "SQL vocabulary": {
+            "rows": 11579,
+            "flagged": 596,
+            "TP": 0,
+            "FP": 596,
+            "TN": 10983,
+            "FN": 0,
+            "precision": 0.0,
+            "recall": null,
+            "FPR": 0.051472,
+            "F1": null
+          }
+        }
+      },
+      "libinjection": {
+        "rows": 30919,
+        "flagged": 17452,
+        "TP": 10419,
+        "FP": 7033,
+        "TN": 12504,
+        "FN": 963,
+        "precision": 0.597009,
+        "recall": 0.915393,
+        "FPR": 0.359984,
+        "F1": 0.722688,
+        "groups": {
+          "SQLi – unspecified": {
+            "rows": 11382,
+            "flagged": 10419,
+            "TP": 10419,
+            "FP": 0,
+            "TN": 0,
+            "FN": 963,
+            "precision": 1.0,
+            "recall": 0.915393,
+            "FPR": null,
+            "F1": 0.955828
+          },
+          "other benign text": {
+            "rows": 5040,
+            "flagged": 0,
+            "TP": 0,
+            "FP": 0,
+            "TN": 5040,
+            "FN": 0,
+            "precision": null,
+            "recall": null,
+            "FPR": 0.0,
+            "F1": null
+          },
+          "numeric": {
+            "rows": 1001,
+            "flagged": 0,
+            "TP": 0,
+            "FP": 0,
+            "TN": 1001,
+            "FN": 0,
+            "precision": null,
+            "recall": null,
+            "FPR": 0.0,
+            "F1": null
+          },
+          "punctuation or markup": {
+            "rows": 1917,
+            "flagged": 0,
+            "TP": 0,
+            "FP": 0,
+            "TN": 1917,
+            "FN": 0,
+            "precision": null,
+            "recall": null,
+            "FPR": 0.0,
+            "F1": null
+          },
+          "SQL vocabulary": {
+            "rows": 11579,
+            "flagged": 7033,
+            "TP": 0,
+            "FP": 7033,
+            "TN": 4546,
+            "FN": 0,
+            "precision": 0.0,
+            "recall": null,
+            "FPR": 0.607393,
+            "F1": null
+          }
+        }
+      },
+      "OWASP CRS 942": {
+        "rows": 30919,
+        "flagged": 18516,
+        "TP": 10683,
+        "FP": 7833,
+        "TN": 11704,
+        "FN": 699,
+        "precision": 0.57696,
+        "recall": 0.938587,
+        "FPR": 0.400932,
+        "F1": 0.71463,
+        "groups": {
+          "SQLi – unspecified": {
+            "rows": 11382,
+            "flagged": 10683,
+            "TP": 10683,
+            "FP": 0,
+            "TN": 0,
+            "FN": 699,
+            "precision": 1.0,
+            "recall": 0.938587,
+            "FPR": null,
+            "F1": 0.968321
+          },
+          "other benign text": {
+            "rows": 5040,
+            "flagged": 0,
+            "TP": 0,
+            "FP": 0,
+            "TN": 5040,
+            "FN": 0,
+            "precision": null,
+            "recall": null,
+            "FPR": 0.0,
+            "F1": null
+          },
+          "numeric": {
+            "rows": 1001,
+            "flagged": 0,
+            "TP": 0,
+            "FP": 0,
+            "TN": 1001,
+            "FN": 0,
+            "precision": null,
+            "recall": null,
+            "FPR": 0.0,
+            "F1": null
+          },
+          "punctuation or markup": {
+            "rows": 1917,
+            "flagged": 0,
+            "TP": 0,
+            "FP": 0,
+            "TN": 1917,
+            "FN": 0,
+            "precision": null,
+            "recall": null,
+            "FPR": 0.0,
+            "F1": null
+          },
+          "SQL vocabulary": {
+            "rows": 11579,
+            "flagged": 7833,
+            "TP": 0,
+            "FP": 7833,
+            "TN": 3746,
+            "FN": 0,
+            "precision": 0.0,
+            "recall": null,
+            "FPR": 0.676483,
+            "F1": null
+          }
+        }
+      }
+    }
+  }
+}

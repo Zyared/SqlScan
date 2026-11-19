@@ -19,7 +19,7 @@ int Hex(char c) {
 
 // Decode ASCII syntax only. Keep non-ASCII URL octets intact so a malformed
 // escape cannot inject an invalid UTF-8 byte into a saved report.
-std::string Decode(std::string_view input) {
+std::string Decode(std::string_view input, bool formPlus) {
     std::string out;
     out.reserve(input.size());
     for (std::size_t i = 0; i < input.size(); ++i) {
@@ -30,7 +30,7 @@ std::string Decode(std::string_view input) {
                 c = static_cast<char>(16 * a + b);
                 i += 2;
             }
-        } else if (c == '+') {
+        } else if (c == '+' && formPlus) {
             c = ' ';
         } else if (c == '&') {
             const auto token = input.substr(i, 10);
@@ -70,9 +70,9 @@ bool Word(char c) { return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z'); }
 std::string Normalize(std::string_view input, bool legacy) {
     std::string decoded;
     if (!legacy && input.find_first_of("%+&") != input.npos) {
-        decoded = Decode(input);
+        decoded = Decode(input, true);
         if (decoded.find_first_of("%&") != decoded.npos)
-            decoded = Decode(decoded);
+            decoded = Decode(decoded, false);
         input = decoded;
     }
     std::string out;
@@ -97,16 +97,49 @@ std::string Normalize(std::string_view input, bool legacy) {
 }
 bool Continuation(char c) { return (static_cast<unsigned char>(c) & 0xc0) == 0x80; }
 
-std::string Context(const std::string &line, std::size_t pos) {
+std::string Context(std::string_view line, std::size_t pos) {
     auto begin = pos > 48 ? pos - 48 : 0;
     auto end = (std::min)(line.size(), pos + 144);
     while (begin < pos && Continuation(line[begin]))
         ++begin;
     while (end < line.size() && Continuation(line[end]))
         --end;
-    return line.substr(begin, end - begin);
+    return std::string(line.substr(begin, end - begin));
+}
+template <typename Visitor>
+void MatchLine(std::string_view line, const std::vector<PatternRule> &rules, Visitor visit) {
+    for (const auto &rule : rules) {
+        if (!rule.enabled)
+            continue;
+        for (auto pos = line.find(rule.pattern); pos != line.npos; pos = line.find(rule.pattern, pos + 1))
+            visit(rule, pos);
+    }
+}
+
+DetectionHit Detail(const PatternRule &rule, std::string_view line, std::size_t number, std::size_t pos) {
+    return {rule.pattern, pos, rule.weight, rule.highRisk, rule.id, number, rule.category, Context(line, pos)};
 }
 } // namespace
+
+void DetectionReport::ForEachHit(const std::function<void(const DetectionHit &)> &visit) const {
+    if (replayRules.empty()) {
+        for (const auto &hit : hits)
+            visit(hit);
+        return;
+    }
+    std::string_view text = normalizedInput;
+    std::size_t begin = 0;
+    for (const auto &score : lines) {
+        auto end = text.find('\n', begin);
+        auto line = text.substr(begin, end - begin);
+        MatchLine(line, replayRules, [&](const PatternRule &rule, std::size_t pos) {
+            visit(Detail(rule, line, score.line, pos));
+        });
+        if (end == text.npos)
+            break;
+        begin = end + 1;
+    }
+}
 
 DetectorSettings BuiltinRuleSource::LoadActiveRules() {
     return {{{"' or", 3, true, 0, "tautology"},
@@ -158,6 +191,7 @@ DetectionReport SqlInjectionDetector::Analyze(std::string_view input, bool legac
     }
     r.analyzedInputBytes = input.size();
     std::size_t start = 0, number = 1;
+    std::vector<std::size_t> counts(rules_.size());
     do {
         const auto end = legacy ? input.npos : input.find_first_of("\r\n", start);
         std::string line = Normalize(input.substr(start, end - start), legacy);
@@ -166,29 +200,29 @@ DetectionReport SqlInjectionDetector::Analyze(std::string_view input, bool legac
         r.normalizedInput += line;
         int score = 0;
         bool high = false;
-        for (const auto &rule : rules_) {
-            if (!rule.enabled)
-                continue;
-            for (auto pos = line.find(rule.pattern); pos != line.npos;
-                 pos = line.find(rule.pattern, pos + 1)) {
-                score = (std::min)(score, (std::numeric_limits<int>::max)() - rule.weight) + rule.weight;
-                high |= rule.highRisk;
-                ++r.totalHits;
-                if (r.hits.size() < kMaxSavedHits)
-                    r.hits.push_back({rule.pattern, pos, rule.weight, rule.highRisk, rule.id, number,
-                                      rule.category, Context(line, pos)});
-            }
-        }
+        MatchLine(line, rules_, [&](const PatternRule &rule, std::size_t pos) {
+            score = (std::min)(score, (std::numeric_limits<int>::max)() - rule.weight) + rule.weight;
+            high |= rule.highRisk;
+            ++r.totalHits;
+            ++counts[static_cast<std::size_t>(&rule - rules_.data())];
+            if (r.hits.size() < kMaxSavedHits)
+                r.hits.push_back(Detail(rule, line, number, pos));
+        });
         const bool suspicious = high || score >= threshold_;
         r.totalScore = (std::min)(r.totalScore, (std::numeric_limits<int>::max)() - score) + score;
         r.suspicious |= suspicious;
-        r.lines.push_back({number++, score, suspicious});
+        r.lines.push_back({number++, score, suspicious, high});
         if (end == input.npos)
             break;
         start = end + 1;
         if (input[end] == '\r' && start < input.size() && input[start] == '\n')
             ++start;
     } while (start < input.size());
+    for (std::size_t i = 0; i < counts.size(); ++i)
+        if (counts[i])
+            r.contributions.push_back({rules_[i].pattern, rules_[i].weight, counts[i]});
+    if (r.totalHits > r.hits.size())
+        r.replayRules = rules_;
     return r;
 }
 

@@ -72,16 +72,26 @@ void Export(CWnd *parent, const wchar_t *basename, const std::function<std::stri
     std::string format = ext == L".html" || ext == L".htm" ? "html" : ext == L".csv" ? "csv" : "txt";
     io::Write(path, "\xef\xbb\xbf" + render(format));
 }
-std::string Grid(const Row &headers, const Rows &rows, const std::string &format) {
+std::string Grid(const Row &headers, const Rows &rows, const std::string &format,
+                 std::size_t riskColumn = SIZE_MAX, bool highFlag = false) {
     std::ostringstream out;
     bool html = format == "html", csv = format == "csv";
     if (html)
         out << "<!doctype html><html lang=\"ru\"><meta charset=\"utf-8\"><title>Журнал "
                "SqlScan</title><style>body{font:16px "
-               "system-ui}td,th{padding:.4em;text-align:left;border-bottom:1px solid #ccc}</style><table>";
+               "system-ui}td,th{padding:.4em;text-align:left;border-bottom:1px solid #ccc}.elevated{background:#ffe2cf}.critical{background:#ffc9c7;font-weight:bold}</style><table>";
     auto line = [&](const Row &r, bool head) {
-        if (html)
-            out << "<tr>";
+        if (html) {
+            const char *style = "";
+            if (!head && riskColumn < r.size()) {
+                const auto &risk = r[riskColumn];
+                if (risk == "Критический")
+                    style = " class=\"critical\"";
+                else if (risk == "Высокий" || risk == "Средний" || (highFlag && risk == "1"))
+                    style = " class=\"elevated\"";
+            }
+            out << "<tr" << style << '>';
+        }
         for (std::size_t i = 0; i < r.size(); ++i) {
             if (html)
                 out << (head ? "<th>" : "<td>") << io::Html(r[i]) << (head ? "</th>" : "</td>");
@@ -107,7 +117,7 @@ std::string StoredReport(const Row &s, const Rows &hits, const std::string &form
     const Row cols = {"Строка", "Позиция", "Шаблон", "Вес", "Высокий риск", "Контекст", "Категория"};
     if (format != "html")
         return Grid(head, {s}, format) + "\r\n" + Grid(cols, hits, format);
-    std::string first = Grid(head, {s}, format), second = Grid(cols, hits, format);
+    std::string first = Grid(head, {s}, format, 7), second = Grid(cols, hits, format, 4, true);
     first.erase(first.find("</html>"));
     second.erase(0, second.find("<table>"));
     return first + "<h2>Совпадения</h2>" + second;
@@ -481,6 +491,15 @@ void CSqlScanDlg::RenderResult() {
     fmt.crTextColor = report_->suspicious ? RGB(152, 40, 35) : RGB(32, 97, 66);
     output_.SetSel(0, (long)summary.find(L'\r'));
     output_.SendMessage(EM_SETCHARFORMAT, SCF_SELECTION, (LPARAM)&fmt);
+    const auto scoreLabel = summary.find(L"Баллы: ");
+    if (scoreLabel != std::wstring::npos) {
+        const auto begin = scoreLabel + 7;
+        const auto length = std::to_wstring(report_->totalScore).size();
+        const double weight = (std::min)(1.0, report_->totalScore / (2.0 * report_->threshold));
+        fmt.crTextColor = RGB(static_cast<int>(32 + 130 * weight), static_cast<int>(112 - 72 * weight), 45);
+        output_.SetSel(static_cast<long>(begin), static_cast<long>(begin + length));
+        output_.SendMessage(EM_SETCHARFORMAT, SCF_SELECTION, reinterpret_cast<LPARAM>(&fmt));
+    }
     fmt.crTextColor = RGB(158, 34, 32);
     long offset = static_cast<long>(summary.size());
     std::size_t cursor = 0;
@@ -561,10 +580,7 @@ void CSqlScanDlg::Detail(std::string id) {
     auto summary = scans_.ScanSummary(id);
     if (summary.empty())
         throw std::runtime_error("Проверка уже удалена");
-    auto hits = scans_.ScanHits(id);
-    auto preview = hits;
-    if (preview.size() > 150)
-        preview.resize(150);
+    auto preview = scans_.ScanHits(id, 150);
     Form f(
         IDD_DETAIL, this,
         [&](Form &w) {
@@ -574,19 +590,19 @@ void CSqlScanDlg::Detail(std::string id) {
                 << (a[6] == "1" ? "Подозрительно" : "Чисто") << " · " << a[7] << "\r\nИсточник: " << a[2]
                 << " " << a[3] << "\r\nБаллы: " << a[4] << " · Порог: " << a[5] << "\r\nSHA-256: " << a[13]
                 << "\r\nБайт входа: " << a[10] << " · Строк: " << a[8] << " · Совпадений: " << a[9]
-                << " · Сохранено: " << hits.size() << "\r\n";
+                << " · Сохранено: " << a[14] << "\r\n";
             if (a[12] == "1")
                 out << "Вход ограничен, проанализировано байт: " << a[11] << "\r\n";
             for (auto &h : preview)
                 out << "\r\n" << h[0] << ':' << h[1] << " · " << h[2] << " · +" << h[3] << " · " << h[5];
-            if (hits.size() > preview.size())
+            if (std::stoull(a[14]) > preview.size())
                 out << "\r\nПолный список доступен в экспорте.";
             Set(w, IDC_DETAIL, out.str());
         },
         {},
         [&](Form &w) {
             Export(&w, L"SqlScan-history",
-                   [&](std::string fmt) { return StoredReport(summary[0], hits, fmt); });
+                   [&](std::string fmt) { return StoredReport(Row(summary[0].begin(), summary[0].begin() + 14), scans_.ScanHits(id), fmt); });
         });
     f.DoModal();
 }
@@ -658,7 +674,7 @@ void CSqlScanDlg::Filters() {
 }
 void CSqlScanDlg::ExportHistory() {
     Export(this, L"SqlScan-journal",
-           [&](std::string fmt) { return Grid(historyHead, scans_.History(filter_, 0, 2147483647), fmt); });
+           [&](std::string fmt) { return Grid(historyHead, scans_.History(filter_, 0, 2147483647), fmt, 6); });
 }
 void CSqlScanDlg::OnAction(UINT id) {
     if (!db_.Connected())

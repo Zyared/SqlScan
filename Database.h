@@ -3,6 +3,7 @@
 #include <functional>
 #include <sql.h>
 #include <sqlext.h>
+#include <stdexcept>
 #include <string>
 #include <vector>
 
@@ -12,6 +13,11 @@ struct HistoryFilter {
     std::string text, from, until, verdict, minScore, source;
     int sortColumn = 0;
     bool ascending = false;
+};
+
+class DbError : public std::runtime_error {
+  public:
+    using std::runtime_error::runtime_error;
 };
 
 class DbConnection {
@@ -55,7 +61,7 @@ class ScanRepository {
     std::string Previous(std::string hash);
     Rows History(const HistoryFilter &filter, int offset, int limit = 50);
     Rows ScanSummary(std::string id);
-    Rows ScanHits(std::string id);
+    Rows ScanHits(std::string id, int limit = -1);
     void DeleteScan(std::string id);
     Rows Days();
     Rows TopRules();

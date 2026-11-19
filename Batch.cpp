@@ -59,6 +59,8 @@ int RunBatch(const std::filesystem::path &input, const std::filesystem::path &ou
     if (!NextRow(data, pos, row))
         throw std::runtime_error("Пустой CSV");
     auto text = std::find(row.begin(), row.end(), "text");
+    if (std::count(row.begin(), row.end(), "text") > 1 || std::count(row.begin(), row.end(), "label") > 1)
+        throw std::runtime_error("Неоднозначный заголовок CSV: text и label допускаются один раз");
     if (text == row.end())
         throw std::runtime_error("Обязательный столбец CSV — text");
     auto col = text - row.begin(), label = std::find(row.begin(), row.end(), "label") - row.begin();

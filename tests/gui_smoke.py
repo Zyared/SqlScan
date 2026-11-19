@@ -96,7 +96,8 @@ def main():
             wait_read(lambda: marker in box(mainwin, 1001).window_text())
             box(mainwin, 1003).click()
             wait_read(lambda: "Сохранено в журнале" in box(mainwin, 1011).window_text())
-            assert "Строка 2" in box(mainwin, 1002).window_text()
+            shown = box(mainwin, 1002).window_text()
+            assert "Строка 2" in shown and "Расчёт баллов" in shown and f"{marker}  1 × 4 = 4" in shown and "есть сигнатура высокого риска" in shown
             post(mainwin, 1003)
             duplicate = standard_dialog(mainwin)
             close_modal(duplicate, 6)  # IDYES opens the existing report.
@@ -127,7 +128,8 @@ def main():
             archived = root / "архив.html"
             choose_path(detail, archived)
             wait_read(archived.exists)
-            assert marker in archived.read_text(encoding="utf-8-sig")
+            markup = archived.read_text(encoding="utf-8-sig")
+            assert marker in markup and '<tr class="elevated">' in markup
             close_modal(detail)
             post(mainwin, 1016)
             journal = root / "журнал.csv"
@@ -135,6 +137,11 @@ def main():
             wait_read(journal.exists)
             with journal.open(encoding="utf-8-sig", newline="") as f:
                 assert list(csv.reader(f))[1][3] == source.name
+            post(mainwin, 1016)
+            journal_html = root / "журнал.html"
+            choose_path(mainwin, journal_html)
+            wait_read(journal_html.exists)
+            assert '<tr class="elevated">' in journal_html.read_text(encoding="utf-8-sig")
             box(mainwin, 1012).select(0)
             post(mainwin, 1015)
             close_modal(standard_dialog(mainwin), 6)

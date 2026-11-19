@@ -1,0 +1,128 @@
+{
+  "seed": 20261119,
+  "cases": 1034,
+  "hand_cases": 10,
+  "seed_rules": 18,
+  "generated_benign_cases": 1000,
+  "exe_sha256": "b9c7b4085d5d2ad579590785fb1e92ef570de54516ea9f535bd86ca4982e7c49",
+  "checks": [
+    "score",
+    "number of hits",
+    "per-line verdict",
+    "risk level"
+  ],
+  "hand_results": [
+    {
+      "example": "чистая запись",
+      "input": "заказ 48",
+      "score": 0,
+      "hits": 0,
+      "verdict": 0,
+      "observed_score": 0,
+      "observed_hits": 0,
+      "observed_verdict": 0,
+      "observed_risk": "Низкий"
+    },
+    {
+      "example": "ниже порога",
+      "input": ";;;;",
+      "score": 4,
+      "hits": 4,
+      "verdict": 0,
+      "observed_score": 4,
+      "observed_hits": 4,
+      "observed_verdict": 0,
+      "observed_risk": "Средний"
+    },
+    {
+      "example": "на пороге",
+      "input": ";;;;;",
+      "score": 5,
+      "hits": 5,
+      "verdict": 1,
+      "observed_score": 5,
+      "observed_hits": 5,
+      "observed_verdict": 1,
+      "observed_risk": "Высокий"
+    },
+    {
+      "example": "двойной порог",
+      "input": ";;;;;;;;;;",
+      "score": 10,
+      "hits": 10,
+      "verdict": 1,
+      "observed_score": 10,
+      "observed_hits": 10,
+      "observed_verdict": 1,
+      "observed_risk": "Критический"
+    },
+    {
+      "example": "разные строки",
+      "input": ";;;\r\n;;",
+      "score": 5,
+      "hits": 5,
+      "verdict": 0,
+      "observed_score": 5,
+      "observed_hits": 5,
+      "observed_verdict": 0,
+      "observed_risk": "Средний"
+    },
+    {
+      "example": "высокий риск ниже порога",
+      "input": "--",
+      "score": 3,
+      "hits": 1,
+      "verdict": 1,
+      "observed_score": 3,
+      "observed_hits": 1,
+      "observed_verdict": 1,
+      "observed_risk": "Высокий"
+    },
+    {
+      "example": "перекрывающиеся совпадения",
+      "input": "---",
+      "score": 6,
+      "hits": 2,
+      "verdict": 1,
+      "observed_score": 6,
+      "observed_hits": 2,
+      "observed_verdict": 1,
+      "observed_risk": "Высокий"
+    },
+    {
+      "example": "три разных признака",
+      "input": ";--",
+      "score": 8,
+      "hits": 3,
+      "verdict": 1,
+      "observed_score": 8,
+      "observed_hits": 3,
+      "observed_verdict": 1,
+      "observed_risk": "Высокий"
+    },
+    {
+      "example": "пустое поле",
+      "input": "",
+      "score": 0,
+      "hits": 0,
+      "verdict": 0,
+      "observed_score": 0,
+      "observed_hits": 0,
+      "observed_verdict": 0,
+      "observed_risk": "Низкий"
+    },
+    {
+      "example": "UTF-8",
+      "input": "🙂я;я",
+      "score": 1,
+      "hits": 1,
+      "verdict": 0,
+      "observed_score": 1,
+      "observed_hits": 1,
+      "observed_verdict": 0,
+      "observed_risk": "Средний"
+    }
+  ],
+  "intentional_mismatches_rejected": 4,
+  "mismatches": 0
+}

@@ -144,12 +144,13 @@ std::vector<TextSpan> HighRiskSpans(const DetectionReport &r, std::size_t limit)
         if (r.normalizedInput[i] == '\n')
             starts.push_back(i + 1);
     std::vector<TextSpan> spans;
-    for (const auto &h : r.hits)
+    r.ForEachHit([&](const DetectionHit &h) {
         if (h.highRisk && h.line <= starts.size()) {
             auto begin = starts[h.line - 1] + h.position;
             if (begin < limit)
                 spans.push_back({begin, (std::min)(begin + h.pattern.size(), limit)});
         }
+    });
     std::sort(spans.begin(), spans.end(), [](auto a, auto b) { return a.begin < b.begin; });
     std::vector<TextSpan> merged;
     for (auto span : spans) {
@@ -166,14 +167,15 @@ std::string Report(const DetectionReport &r, std::string_view format, bool previ
     if (format == "csv") {
         out << "verdict,risk,score,threshold,lines,total_hits,saved_hits,truncated\r\n"
             << Csv(verdict) << ',' << Csv(RiskLevel(r)) << ',' << r.totalScore << ',' << r.threshold << ','
-            << r.lines.size() << ',' << r.totalHits << ',' << r.hits.size() << ',' << r.inputTruncated
+            << r.lines.size() << ',' << r.totalHits << ',' << r.totalHits << ',' << r.inputTruncated
             << "\r\n\r\nline,score,suspicious\r\n";
         for (const auto &l : r.lines)
             out << l.line << ',' << l.score << ',' << l.suspicious << "\r\n";
         out << "\r\nline,position,category,pattern,weight,high_risk,context\r\n";
-        for (const auto &h : r.hits)
+        r.ForEachHit([&](const DetectionHit &h) {
             out << h.line << ',' << h.position << ',' << Csv(h.category) << ',' << Csv(h.pattern) << ','
                 << h.weight << ',' << h.highRisk << ',' << Csv(h.context) << "\r\n";
+        });
     } else {
         const bool html = format == "html";
         if (html)
@@ -184,11 +186,35 @@ std::string Report(const DetectionReport &r, std::string_view format, bool previ
         out << verdict << " · риск: " << RiskLevel(r) << "\r\nБаллы: " << r.totalScore
             << "   Порог для строки: " << r.threshold << "   Строк: " << r.lines.size()
             << "   Совпадений: " << r.totalHits << "\r\n";
+        out << "Расчёт баллов (число вхождений × вес):\r\n";
+        if (r.contributions.empty())
+            out << "Совпадений нет. Сумма 0.\r\n";
+        std::size_t shown = 0;
+        for (const auto &c : r.contributions) {
+            if (preview && shown++ == 32) {
+                out << "Остальные правила перечислены в полном отчёте.\r\n";
+                break;
+            }
+            out << (html ? Html(c.pattern) : c.pattern) << "  " << c.occurrences << " × "
+                << c.weight << " = " << c.occurrences * c.weight << "\r\n";
+        }
+        auto first = std::find_if(r.lines.begin(), r.lines.end(), [](const LineScore &s) { return s.suspicious; });
+        if (first != r.lines.end()) {
+            out << "Решение по строке " << first->line << ": ";
+            if (first->highRisk)
+                out << "есть сигнатура высокого риска";
+            if (first->highRisk && first->score >= r.threshold)
+                out << ", ";
+            if (first->score >= r.threshold)
+                out << first->score << " ≥ " << r.threshold;
+            out << ".\r\n";
+        } else {
+            out << "Во всех строках балл ниже порога и нет сигнатур высокого риска.\r\n";
+        }
         if (r.inputTruncated)
             out << "Вход ограничен: обработано " << r.analyzedInputBytes << " из " << r.originalInputBytes
                 << " байт.\r\n";
-        if (r.totalHits > r.hits.size())
-            out << "Сохранены первые " << r.hits.size() << " совпадений.\r\n";
+
         std::size_t count = 0;
         for (const auto &l : r.lines)
             if (!preview || (l.score && count++ < 100))
@@ -198,12 +224,7 @@ std::string Report(const DetectionReport &r, std::string_view format, bool previ
                                      : "чисто")
                     << " · " << l.score << " б.\r\n";
         out << "\r\n";
-        count = 0;
-        for (const auto &h : r.hits) {
-            if (preview && count++ >= 100) {
-                out << "Показаны первые 100 совпадений. Полный список доступен в экспорте.\r\n";
-                break;
-            }
+        auto writeHit = [&](const DetectionHit &h) {
             out << h.line << ':' << h.position << "  [" << (html ? Html(h.category) : h.category) << ", +"
                 << h.weight << "]  ";
             if (html && h.highRisk)
@@ -212,6 +233,14 @@ std::string Report(const DetectionReport &r, std::string_view format, bool previ
             if (html && h.highRisk)
                 out << "</mark>";
             out << "   " << (html ? Html(h.context) : h.context) << "\r\n";
+        };
+        if (preview) {
+            for (std::size_t i = 0; i < (std::min)(r.hits.size(), std::size_t(100)); ++i)
+                writeHit(r.hits[i]);
+            if (r.totalHits > 100)
+                out << "Показаны первые 100 совпадений. Полный список доступен в экспорте.\r\n";
+        } else {
+            r.ForEachHit(writeHit);
         }
         if (!preview) {
             out << "\r\nНормализованный текст\r\n";

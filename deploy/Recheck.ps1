@@ -1,0 +1,75 @@
+[CmdletBinding()]
+param([switch]$Quality, [string]$Cache, [string]$ResultDirectory)
+$ErrorActionPreference = 'Stop'
+$env:PSModulePath = (Join-Path $PSHOME 'Modules') + ';' + $env:PSModulePath
+$kit = $PSScriptRoot
+$python = Join-Path $kit 'validation\python\python.exe'
+if (!$ResultDirectory) {
+    $ResultDirectory = Join-Path $env:LOCALAPPDATA ('SqlScan2\Checks\' + (Get-Date -Format yyyyMMdd-HHmmss) + '-' + [Guid]::NewGuid().ToString('N').Substring(0,6))
+}
+$result = [IO.Directory]::CreateDirectory($ResultDirectory).FullName
+$data = Join-Path ([IO.Path]::GetTempPath()) ('sqlscan-qa-' + [Guid]::NewGuid().ToString('N'))
+[IO.Directory]::CreateDirectory($data) | Out-Null
+function Run([string]$path, [string[]]$arguments) {
+    & $path @arguments
+    if ($LASTEXITCODE) { throw "Check failed: $([IO.Path]::GetFileName($path)) ($LASTEXITCODE)" }
+}
+$bin = Join-Path $kit 'runtime\pgsql\bin'
+$env:PGCLIENTENCODING = 'UTF8'
+$env:PYTHONUTF8 = '1'
+$env:PYTHONIOENCODING = 'utf-8'
+$dsnKey = $null
+Start-Transcript -LiteralPath (Join-Path $result 'checks.txt') | Out-Null
+try {
+    Run $python @('-B', (Join-Path $kit 'source\tests\check_manifest.py'), $kit)
+    & (Join-Path $kit 'Start-Local.ps1') -DataRoot $data -PrepareOnly
+    $config = Import-Clixml -LiteralPath (Join-Path $data 'instance.xml')
+    $port = $config.Port
+    $dsn = "SqlScan2-Local-$port"
+    $selector = 'Driver={PostgreSQL Unicode(x64)}'
+    $key = "HKCU:\Software\ODBC\ODBC.INI\$dsn"
+    if (Test-Path -LiteralPath $key) {
+        $dll = Get-ItemPropertyValue -LiteralPath $key -Name Driver
+        if ($dll.StartsWith($data+'\',[StringComparison]::OrdinalIgnoreCase)) {
+            $dsnKey = $key
+            $env:PATH = (Split-Path $dll -Parent) + ';' + $env:PATH
+            $selector = "DSN=$dsn"
+        }
+    }
+    $env:PGPASSWORD = $config.App.GetNetworkCredential().Password
+    $env:SQLSCAN_TEST_CONNECTION = "$selector;Server=127.0.0.1;Port=$port;Database=sqlscan;Uid=sqlscan_app;Pwd=$env:PGPASSWORD;"
+    $env:SQLSCAN_CONNECTION = $env:SQLSCAN_TEST_CONNECTION
+    $pg = @('-X','-w','-v','ON_ERROR_STOP=1','-h','127.0.0.1','-p',[string]$port,'-U','sqlscan_app','-d','sqlscan')
+    $psql = Join-Path $bin 'psql.exe'
+    Run $psql ($pg + @('-f',(Join-Path $kit 'source\db\test_schema.sql')))
+    Run $psql ($pg + @('-f',(Join-Path $kit 'source\tests\seed_journal.sql')))
+    Run (Join-Path $kit 'validation\Acceptance.exe') @()
+    if ($env:SQLSCAN_VSTEST) {
+        Run $env:SQLSCAN_VSTEST @((Join-Path $kit 'validation\SqlScanTests.dll'),'/Platform:x64',('/ResultsDirectory:' + $result))
+    }
+    Run $python @('-B',(Join-Path $kit 'source\tests\batch_smoke.py'),(Join-Path $kit 'SqlScan.exe'))
+    Run $python @('-B',(Join-Path $kit 'source\tests\score_audit.py'),$kit,(Join-Path $result 'scores.json'))
+    Run $python @('-B',(Join-Path $kit 'source\tests\gui_smoke.py'),(Join-Path $kit 'SqlScan.exe'))
+    Run $python @('-B',(Join-Path $kit 'source\tests\release_checks.py'),$kit,$data,[string]$port)
+    if ($Quality) {
+        $output = Join-Path $result 'quality.json'
+        $opts = @('-B',(Join-Path $kit 'source\benchmark\verify_quality.py'),'--kit',$kit,'--out',$output)
+        if ($Cache) { $opts += @('--cache',$Cache) }
+        Run $python $opts
+        if ((Get-FileHash $output).Hash -ne (Get-FileHash (Join-Path $kit 'source\benchmark\results\release-quality.json')).Hash) { throw 'Aggregate benchmark differs from release' }
+    }
+    Write-Output 'PASS'
+} finally {
+    Stop-Transcript | Out-Null
+    try { & (Join-Path $kit 'Start-Local.ps1') -DataRoot $data -Stop }
+    finally {
+        if ($dsnKey -and (Test-Path -LiteralPath $dsnKey)) { Remove-Item -LiteralPath $dsnKey }
+        if ((Test-Path -LiteralPath $data) -and !(Test-Path -LiteralPath (Join-Path $data 'cluster\postmaster.pid'))) {
+            $verified = Get-Item -LiteralPath $data
+            if ($verified.Parent.FullName.TrimEnd('\') -eq [IO.Path]::GetTempPath().TrimEnd('\') -and $verified.Name -match '^sqlscan-qa-[0-9a-f]{32}$' -and !($verified.Attributes -band [IO.FileAttributes]::ReparsePoint)) {
+                Remove-Item -LiteralPath $verified.FullName -Recurse -Force
+            }
+        }
+        Write-Output "Report: $result"
+    }
+}
