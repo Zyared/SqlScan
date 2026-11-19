@@ -1,0 +1,499 @@
+{
+  "sha256": {
+    "SqlScan-2.0.1.exe": "b9c7b4085d5d2ad579590785fb1e92ef570de54516ea9f535bd86ca4982e7c49",
+    "SqlScan.exe": "842cca258cfb3e0585ed36f346e69ed144dea1072fe82dd8f05dc3cbcddb4fd9"
+  },
+  "datasets": {
+    "http": {
+      "before": {
+        "rows": 10051,
+        "flagged": 2029,
+        "TP": 2028,
+        "FP": 1,
+        "TN": 6433,
+        "FN": 1589,
+        "precision": 0.999507,
+        "recall": 0.560686,
+        "FPR": 0.000155,
+        "F1": 0.718385
+      },
+      "after": {
+        "rows": 10051,
+        "flagged": 2136,
+        "TP": 2135,
+        "FP": 1,
+        "TN": 6433,
+        "FN": 1482,
+        "precision": 0.999532,
+        "recall": 0.590268,
+        "FPR": 0.000155,
+        "F1": 0.742221
+      },
+      "new_TP": 107,
+      "lost_TP": 0,
+      "new_FP": 0,
+      "removed_FP": 0,
+      "new_unlabelled_alerts": 0,
+      "removed_unlabelled_alerts": 0
+    },
+    "csic_normal": {
+      "before": {
+        "rows": 36000,
+        "flagged": 0,
+        "TP": 0,
+        "FP": 0,
+        "TN": 36000,
+        "FN": 0,
+        "precision": null,
+        "recall": null,
+        "FPR": 0.0,
+        "F1": null
+      },
+      "after": {
+        "rows": 36000,
+        "flagged": 0,
+        "TP": 0,
+        "FP": 0,
+        "TN": 36000,
+        "FN": 0,
+        "precision": null,
+        "recall": null,
+        "FPR": 0.0,
+        "F1": null
+      },
+      "new_TP": 0,
+      "lost_TP": 0,
+      "new_FP": 0,
+      "removed_FP": 0,
+      "new_unlabelled_alerts": 0,
+      "removed_unlabelled_alerts": 0
+    },
+    "csic_mixed": {
+      "before": {
+        "rows": 25065,
+        "flagged": 2032
+      },
+      "after": {
+        "rows": 25065,
+        "flagged": 2032
+      },
+      "new_TP": 0,
+      "lost_TP": 0,
+      "new_FP": 0,
+      "removed_FP": 0,
+      "new_unlabelled_alerts": 0,
+      "removed_unlabelled_alerts": 0
+    },
+    "patt_union": {
+      "before": {
+        "rows": 424,
+        "flagged": 261,
+        "TP": 261,
+        "FP": 0,
+        "TN": 0,
+        "FN": 163,
+        "precision": 1.0,
+        "recall": 0.615566,
+        "FPR": null,
+        "F1": 0.762044
+      },
+      "after": {
+        "rows": 424,
+        "flagged": 261,
+        "TP": 261,
+        "FP": 0,
+        "TN": 0,
+        "FN": 163,
+        "precision": 1.0,
+        "recall": 0.615566,
+        "FPR": null,
+        "F1": 0.762044
+      },
+      "new_TP": 0,
+      "lost_TP": 0,
+      "new_FP": 0,
+      "removed_FP": 0,
+      "new_unlabelled_alerts": 0,
+      "removed_unlabelled_alerts": 0
+    },
+    "patt_time": {
+      "before": {
+        "rows": 104,
+        "flagged": 95,
+        "TP": 95,
+        "FP": 0,
+        "TN": 0,
+        "FN": 9,
+        "precision": 1.0,
+        "recall": 0.913462,
+        "FPR": null,
+        "F1": 0.954774
+      },
+      "after": {
+        "rows": 104,
+        "flagged": 95,
+        "TP": 95,
+        "FP": 0,
+        "TN": 0,
+        "FN": 9,
+        "precision": 1.0,
+        "recall": 0.913462,
+        "FPR": null,
+        "F1": 0.954774
+      },
+      "new_TP": 0,
+      "lost_TP": 0,
+      "new_FP": 0,
+      "removed_FP": 0,
+      "new_unlabelled_alerts": 0,
+      "removed_unlabelled_alerts": 0
+    },
+    "patt_error": {
+      "before": {
+        "rows": 154,
+        "flagged": 47,
+        "TP": 47,
+        "FP": 0,
+        "TN": 0,
+        "FN": 107,
+        "precision": 1.0,
+        "recall": 0.305195,
+        "FPR": null,
+        "F1": 0.467662
+      },
+      "after": {
+        "rows": 154,
+        "flagged": 47,
+        "TP": 47,
+        "FP": 0,
+        "TN": 0,
+        "FN": 107,
+        "precision": 1.0,
+        "recall": 0.305195,
+        "FPR": null,
+        "F1": 0.467662
+      },
+      "new_TP": 0,
+      "lost_TP": 0,
+      "new_FP": 0,
+      "removed_FP": 0,
+      "new_unlabelled_alerts": 0,
+      "removed_unlabelled_alerts": 0
+    },
+    "secs_boolean_blind": {
+      "before": {
+        "rows": 56,
+        "flagged": 4,
+        "TP": 4,
+        "FP": 0,
+        "TN": 0,
+        "FN": 52,
+        "precision": 1.0,
+        "recall": 0.071429,
+        "FPR": null,
+        "F1": 0.133333
+      },
+      "after": {
+        "rows": 56,
+        "flagged": 4,
+        "TP": 4,
+        "FP": 0,
+        "TN": 0,
+        "FN": 52,
+        "precision": 1.0,
+        "recall": 0.071429,
+        "FPR": null,
+        "F1": 0.133333
+      },
+      "new_TP": 0,
+      "lost_TP": 0,
+      "new_FP": 0,
+      "removed_FP": 0,
+      "new_unlabelled_alerts": 0,
+      "removed_unlabelled_alerts": 0
+    },
+    "secs_time_blind": {
+      "before": {
+        "rows": 21,
+        "flagged": 16,
+        "TP": 16,
+        "FP": 0,
+        "TN": 0,
+        "FN": 5,
+        "precision": 1.0,
+        "recall": 0.761905,
+        "FPR": null,
+        "F1": 0.864865
+      },
+      "after": {
+        "rows": 21,
+        "flagged": 16,
+        "TP": 16,
+        "FP": 0,
+        "TN": 0,
+        "FN": 5,
+        "precision": 1.0,
+        "recall": 0.761905,
+        "FPR": null,
+        "F1": 0.864865
+      },
+      "new_TP": 0,
+      "lost_TP": 0,
+      "new_FP": 0,
+      "removed_FP": 0,
+      "new_unlabelled_alerts": 0,
+      "removed_unlabelled_alerts": 0
+    },
+    "secs_error_based": {
+      "before": {
+        "rows": 52,
+        "flagged": 2,
+        "TP": 2,
+        "FP": 0,
+        "TN": 0,
+        "FN": 50,
+        "precision": 1.0,
+        "recall": 0.038462,
+        "FPR": null,
+        "F1": 0.074074
+      },
+      "after": {
+        "rows": 52,
+        "flagged": 2,
+        "TP": 2,
+        "FP": 0,
+        "TN": 0,
+        "FN": 50,
+        "precision": 1.0,
+        "recall": 0.038462,
+        "FPR": null,
+        "F1": 0.074074
+      },
+      "new_TP": 0,
+      "lost_TP": 0,
+      "new_FP": 0,
+      "removed_FP": 0,
+      "new_unlabelled_alerts": 0,
+      "removed_unlabelled_alerts": 0
+    },
+    "secs_stacked_queries": {
+      "before": {
+        "rows": 9,
+        "flagged": 6,
+        "TP": 6,
+        "FP": 0,
+        "TN": 0,
+        "FN": 3,
+        "precision": 1.0,
+        "recall": 0.666667,
+        "FPR": null,
+        "F1": 0.8
+      },
+      "after": {
+        "rows": 9,
+        "flagged": 6,
+        "TP": 6,
+        "FP": 0,
+        "TN": 0,
+        "FN": 3,
+        "precision": 1.0,
+        "recall": 0.666667,
+        "FPR": null,
+        "F1": 0.8
+      },
+      "new_TP": 0,
+      "lost_TP": 0,
+      "new_FP": 0,
+      "removed_FP": 0,
+      "new_unlabelled_alerts": 0,
+      "removed_unlabelled_alerts": 0
+    },
+    "secs_inline_query": {
+      "before": {
+        "rows": 8,
+        "flagged": 0,
+        "TP": 0,
+        "FP": 0,
+        "TN": 0,
+        "FN": 8,
+        "precision": null,
+        "recall": 0.0,
+        "FPR": null,
+        "F1": 0.0
+      },
+      "after": {
+        "rows": 8,
+        "flagged": 0,
+        "TP": 0,
+        "FP": 0,
+        "TN": 0,
+        "FN": 8,
+        "precision": null,
+        "recall": 0.0,
+        "FPR": null,
+        "F1": 0.0
+      },
+      "new_TP": 0,
+      "lost_TP": 0,
+      "new_FP": 0,
+      "removed_FP": 0,
+      "new_unlabelled_alerts": 0,
+      "removed_unlabelled_alerts": 0
+    },
+    "kaggle": {
+      "before": {
+        "rows": 30919,
+        "flagged": 5108,
+        "TP": 4512,
+        "FP": 596,
+        "TN": 18941,
+        "FN": 6870,
+        "precision": 0.88332,
+        "recall": 0.396415,
+        "FPR": 0.030506,
+        "F1": 0.547241
+      },
+      "after": {
+        "rows": 30919,
+        "flagged": 6532,
+        "TP": 5936,
+        "FP": 596,
+        "TN": 18941,
+        "FN": 5446,
+        "precision": 0.908757,
+        "recall": 0.521525,
+        "FPR": 0.030506,
+        "F1": 0.662722
+      },
+      "new_TP": 1424,
+      "lost_TP": 0,
+      "new_FP": 0,
+      "removed_FP": 0,
+      "new_unlabelled_alerts": 0,
+      "removed_unlabelled_alerts": 0,
+      "development": {
+        "before": {
+          "rows": 24153,
+          "flagged": 4102,
+          "TP": 3608,
+          "FP": 494,
+          "TN": 14567,
+          "FN": 5484,
+          "precision": 0.879571,
+          "recall": 0.396832,
+          "FPR": 0.0328,
+          "F1": 0.546915
+        },
+        "after": {
+          "rows": 24153,
+          "flagged": 5244,
+          "TP": 4750,
+          "FP": 494,
+          "TN": 14567,
+          "FN": 4342,
+          "precision": 0.905797,
+          "recall": 0.522437,
+          "FPR": 0.0328,
+          "F1": 0.662667
+        },
+        "new_TP": 1142,
+        "lost_TP": 0,
+        "new_FP": 0,
+        "removed_FP": 0,
+        "new_unlabelled_alerts": 0,
+        "removed_unlabelled_alerts": 0
+      },
+      "held_out": {
+        "before": {
+          "rows": 6766,
+          "flagged": 1006,
+          "TP": 904,
+          "FP": 102,
+          "TN": 4374,
+          "FN": 1386,
+          "precision": 0.898608,
+          "recall": 0.39476,
+          "FPR": 0.022788,
+          "F1": 0.548544
+        },
+        "after": {
+          "rows": 6766,
+          "flagged": 1288,
+          "TP": 1186,
+          "FP": 102,
+          "TN": 4374,
+          "FN": 1104,
+          "precision": 0.920807,
+          "recall": 0.517904,
+          "FPR": 0.022788,
+          "F1": 0.66294
+        },
+        "new_TP": 282,
+        "lost_TP": 0,
+        "new_FP": 0,
+        "removed_FP": 0,
+        "new_unlabelled_alerts": 0,
+        "removed_unlabelled_alerts": 0
+      },
+      "previous_misses_by_first_matching_group": {
+        "other": {
+          "before_FN": 285,
+          "recovered": 0,
+          "remaining": 285
+        },
+        "nested query": {
+          "before_FN": 1740,
+          "recovered": 0,
+          "remaining": 1740
+        },
+        "other logical operators": {
+          "before_FN": 622,
+          "recovered": 0,
+          "remaining": 622
+        },
+        "catalog references": {
+          "before_FN": 172,
+          "recovered": 0,
+          "remaining": 172
+        },
+        "other SQL vocabulary": {
+          "before_FN": 879,
+          "recovered": 0,
+          "remaining": 879
+        },
+        "constant comparison": {
+          "before_FN": 773,
+          "recovered": 18,
+          "remaining": 755
+        },
+        "timing expressions": {
+          "before_FN": 1277,
+          "recovered": 1073,
+          "remaining": 204
+        },
+        "comment markers": {
+          "before_FN": 7,
+          "recovered": 0,
+          "remaining": 7
+        },
+        "set operations": {
+          "before_FN": 922,
+          "recovered": 333,
+          "remaining": 589
+        },
+        "diagnostic functions": {
+          "before_FN": 193,
+          "recovered": 0,
+          "remaining": 193
+        }
+      },
+      "previous_misses_by_total_score": {
+        "0": 6660,
+        "1": 15,
+        "2": 15,
+        "3": 179,
+        "4": 1
+      }
+    }
+  }
+}

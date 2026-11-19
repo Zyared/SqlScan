@@ -86,5 +86,5 @@ def build(kit,wix,out,version):
 if __name__=="__main__":
     parser=argparse.ArgumentParser(description=__doc__)
     for n in ("kit","wix","out"):parser.add_argument(n,type=Path)
-    parser.add_argument("--version",default="2.0.1")
+    parser.add_argument("--version",default="2.0.2")
     a=parser.parse_args();build(a.kit.resolve(),a.wix.resolve(),a.out.resolve(),a.version)

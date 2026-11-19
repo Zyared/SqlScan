@@ -45,6 +45,7 @@ struct DetectionHit {
     std::size_t line;
     std::string category;
     std::string context;
+    std::size_t matchedBytes;
 };
 
 struct LineScore {
@@ -74,6 +75,7 @@ struct DetectionReport {
     std::size_t totalHits = 0;
     // Only dense reports need a rule snapshot to enumerate details beyond the preview.
     std::vector<PatternRule> replayRules;
+    bool replayLegacy = false;
     void ForEachHit(const std::function<void(const DetectionHit &)> &visit) const;
 };
 

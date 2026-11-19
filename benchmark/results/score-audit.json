@@ -1,10 +1,11 @@
 {
   "seed": 20261119,
-  "cases": 1034,
+  "cases": 1046,
   "hand_cases": 10,
   "seed_rules": 18,
   "generated_benign_cases": 1000,
-  "exe_sha256": "b9c7b4085d5d2ad579590785fb1e92ef570de54516ea9f535bd86ca4982e7c49",
+  "layout_cases": 12,
+  "exe_sha256": "842cca258cfb3e0585ed36f346e69ed144dea1072fe82dd8f05dc3cbcddb4fd9",
   "checks": [
     "score",
     "number of hits",

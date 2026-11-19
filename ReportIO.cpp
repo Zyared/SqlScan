@@ -148,7 +148,7 @@ std::vector<TextSpan> HighRiskSpans(const DetectionReport &r, std::size_t limit)
         if (h.highRisk && h.line <= starts.size()) {
             auto begin = starts[h.line - 1] + h.position;
             if (begin < limit)
-                spans.push_back({begin, (std::min)(begin + h.pattern.size(), limit)});
+                spans.push_back({begin, (std::min)(begin + h.matchedBytes, limit)});
         }
     });
     std::sort(spans.begin(), spans.end(), [](auto a, auto b) { return a.begin < b.begin; });

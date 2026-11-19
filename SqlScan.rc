@@ -99,8 +99,8 @@ BEGIN
     DEFPUSHBUTTON "Закрыть",IDOK,401,240,69,19
 END
 VS_VERSION_INFO VERSIONINFO
-FILEVERSION 2,0,1,0
-PRODUCTVERSION 2,0,1,0
+FILEVERSION 2,0,2,0
+PRODUCTVERSION 2,0,2,0
 FILEOS 0x40004L
 FILETYPE 0x1L
 BEGIN
@@ -109,9 +109,9 @@ BEGIN
   BLOCK "041904b0"
   BEGIN
    VALUE "FileDescription", "SqlScan — анализ текста и журналов\0"
-   VALUE "FileVersion", "2.0.1\0"
+   VALUE "FileVersion", "2.0.2\0"
    VALUE "ProductName", "SqlScan\0"
-   VALUE "ProductVersion", "2.0.1\0"
+   VALUE "ProductVersion", "2.0.2\0"
   END
  END
  BLOCK "VarFileInfo"

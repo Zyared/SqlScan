@@ -106,18 +106,70 @@ std::string Context(std::string_view line, std::size_t pos) {
         --end;
     return std::string(line.substr(begin, end - begin));
 }
+bool IdentifierByte(char c) {
+    return Word(c) || (c >= '0' && c <= '9') || c == '_' || c == '$' || static_cast<unsigned char>(c) >= 0x80;
+}
+
+bool Consume(std::string_view &text, std::string_view prefix) {
+    if (!text.starts_with(prefix))
+        return false;
+    text.remove_prefix(prefix.size());
+    return true;
+}
+
+void SkipSpace(std::string_view &text) {
+    if (text.starts_with(' ')) // Normalize already collapsed whitespace.
+        text.remove_prefix(1);
+}
+
+std::size_t AdditionalSpellingLength(std::string_view line, std::size_t pos, std::string_view prefix) {
+    auto begin = pos;
+    if (prefix == "sleep" && pos >= 3 && line.substr(pos - 3, 3) == "pg_")
+        begin -= 3;
+    if (begin && IdentifierByte(line[begin - 1]))
+        return 0;
+    auto rest = line.substr(pos + prefix.size());
+    if (prefix == "union") {
+        if (!Consume(rest, " all select null") && !Consume(rest, " distinct select null"))
+            return 0;
+        SkipSpace(rest);
+        if (!Consume(rest, ","))
+            return 0;
+        SkipSpace(rest);
+        if (Consume(rest, "null") && (rest.empty() || !IdentifierByte(rest.front())))
+            return line.size() - rest.size() - pos;
+        return 0;
+    }
+    if (!Consume(rest, " ("))
+        return 0;
+    const auto matchedBytes = line.size() - rest.size() - pos;
+    SkipSpace(rest);
+    return !rest.empty() && rest.front() >= '0' && rest.front() <= '9' ? matchedBytes : 0;
+}
+
 template <typename Visitor>
-void MatchLine(std::string_view line, const std::vector<PatternRule> &rules, Visitor visit) {
+void MatchLine(std::string_view line, const std::vector<PatternRule> &rules, bool legacy, Visitor visit) {
     for (const auto &rule : rules) {
         if (!rule.enabled)
             continue;
-        for (auto pos = line.find(rule.pattern); pos != line.npos; pos = line.find(rule.pattern, pos + 1))
-            visit(rule, pos);
+        std::string_view prefix = rule.pattern;
+        if (!legacy && rule.category == "time_based" && (prefix == "sleep(" || prefix == "benchmark("))
+            prefix.remove_suffix(1);
+        else if (!legacy && rule.category == "union" && prefix == "union select")
+            prefix = "union";
+        const bool extended = prefix.size() != rule.pattern.size();
+        for (auto pos = line.find(prefix); pos != line.npos; pos = line.find(prefix, pos + 1)) {
+            if (!extended || line.substr(pos).starts_with(rule.pattern))
+                visit(rule, pos, rule.pattern.size());
+            else if (auto length = AdditionalSpellingLength(line, pos, prefix))
+                visit(rule, pos, length);
+        }
     }
 }
 
-DetectionHit Detail(const PatternRule &rule, std::string_view line, std::size_t number, std::size_t pos) {
-    return {rule.pattern, pos, rule.weight, rule.highRisk, rule.id, number, rule.category, Context(line, pos)};
+DetectionHit Detail(const PatternRule &rule, std::string_view line, std::size_t number, std::size_t pos,
+                    std::size_t length) {
+    return {rule.pattern, pos, rule.weight, rule.highRisk, rule.id, number, rule.category, Context(line, pos), length};
 }
 } // namespace
 
@@ -132,8 +184,8 @@ void DetectionReport::ForEachHit(const std::function<void(const DetectionHit &)>
     for (const auto &score : lines) {
         auto end = text.find('\n', begin);
         auto line = text.substr(begin, end - begin);
-        MatchLine(line, replayRules, [&](const PatternRule &rule, std::size_t pos) {
-            visit(Detail(rule, line, score.line, pos));
+        MatchLine(line, replayRules, replayLegacy, [&](const PatternRule &rule, std::size_t pos, std::size_t length) {
+            visit(Detail(rule, line, score.line, pos, length));
         });
         if (end == text.npos)
             break;
@@ -200,13 +252,13 @@ DetectionReport SqlInjectionDetector::Analyze(std::string_view input, bool legac
         r.normalizedInput += line;
         int score = 0;
         bool high = false;
-        MatchLine(line, rules_, [&](const PatternRule &rule, std::size_t pos) {
+        MatchLine(line, rules_, legacy, [&](const PatternRule &rule, std::size_t pos, std::size_t length) {
             score = (std::min)(score, (std::numeric_limits<int>::max)() - rule.weight) + rule.weight;
             high |= rule.highRisk;
             ++r.totalHits;
             ++counts[static_cast<std::size_t>(&rule - rules_.data())];
             if (r.hits.size() < kMaxSavedHits)
-                r.hits.push_back(Detail(rule, line, number, pos));
+                r.hits.push_back(Detail(rule, line, number, pos, length));
         });
         const bool suspicious = high || score >= threshold_;
         r.totalScore = (std::min)(r.totalScore, (std::numeric_limits<int>::max)() - score) + score;
@@ -221,8 +273,10 @@ DetectionReport SqlInjectionDetector::Analyze(std::string_view input, bool legac
     for (std::size_t i = 0; i < counts.size(); ++i)
         if (counts[i])
             r.contributions.push_back({rules_[i].pattern, rules_[i].weight, counts[i]});
-    if (r.totalHits > r.hits.size())
+    if (r.totalHits > r.hits.size()) {
         r.replayRules = rules_;
+        r.replayLegacy = legacy;
+    }
     return r;
 }
 

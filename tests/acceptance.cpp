@@ -51,6 +51,27 @@ void CheckCore() {
          {"MARKER\tTOKEN", "mar/**/ker token", "marker%2520token", "marker&#32;token", "marker+token"})
         Require(marker.Analyze(s).suspicious, "normalization");
     Require(!marker.Analyze("marker\ntoken").suspicious, "cross-line boundary");
+    const std::string call = "timing: sleep ( 0";
+    auto layout = stock.Analyze(call);
+    Require(layout.totalHits == 1 && layout.totalScore == 4 && layout.hits[0].position == 8 &&
+            layout.hits[0].matchedBytes == 7 && !stock.Analyze(call, true).suspicious, "call layout and legacy");
+    const auto span = io::HighRiskSpans(layout, 200);
+    Require(span.size() == 1 && span.front().begin == 8 && span.front().end == 15, "actual spelling highlighted");
+    Require(!stock.Analyze("notes: asleep ( 0").suspicious && !stock.Analyze("sleep ( hours").suspicious,
+            "identifier and argument boundaries");
+    Require(!stock.Analyze("union all select name,city").suspicious &&
+            !stock.Analyze("union all select null,null_key").suspicious, "ordinary set operations");
+    SqlInjectionDetector literal({{"sleep(", 4, true, 1, "custom"}}, 5, 128);
+    Require(!literal.Analyze(call).suspicious, "custom-category literal keeps literal matching");
+    for (bool legacy : {false, true}) {
+        auto report = stock.Analyze(std::string(kMaxSavedHits + 1, ';') + " sleep ( 0", legacy);
+        std::size_t count = 0, expanded = 0;
+        report.ForEachHit([&](const DetectionHit &h) {
+            ++count;
+            if (h.pattern == "sleep(") ++expanded;
+        });
+        Require(count == report.totalHits && expanded == (legacy ? 0u : 1u), "dense replay respects matching mode");
+    }
     auto dense = stock.Analyze(std::string(kMaxSavedHits + 2, ';'));
     Require(dense.hits.size() == kMaxSavedHits && dense.totalHits == kMaxSavedHits + 2 &&
                 dense.totalScore == static_cast<int>(dense.totalHits),

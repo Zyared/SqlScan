@@ -160,6 +160,12 @@ def main():
             box(mainwin, 1012).select(row_index(marker))
             post(mainwin, 1016)
             close_modal(standard_dialog(mainwin), 6)
+            select_tab(0)
+            box(mainwin, 1001).set_edit_text("разбор журнала: sleep ( 0")
+            box(mainwin, 1003).click()
+            shown = box(mainwin, 1002).window_text()
+            assert "1 × 4 = 4" in shown and "есть сигнатура высокого риска" in shown
+            assert "Сохранено в журнале" in box(mainwin, 1011).window_text()
             print("GUI passed: rule CRUD, file/manual scan, deduplication, three exports, filters, archive, delete, statistics")
         finally:
             win32gui.PostMessage(mainwin.handle, win32con.WM_CLOSE, 0, 0)

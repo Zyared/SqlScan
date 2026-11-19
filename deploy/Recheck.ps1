@@ -54,8 +54,12 @@ try {
     if ($Quality) {
         $output = Join-Path $result 'quality.json'
         $opts = @('-B',(Join-Path $kit 'source\benchmark\verify_quality.py'),'--kit',$kit,'--out',$output)
-        if ($Cache) { $opts += @('--cache',$Cache) }
+        if (!$Cache) { $Cache = Join-Path $data 'quality-cache' }
+        $opts += @('--cache',$Cache)
         Run $python $opts
+        $paired = Join-Path $result 'paired.json'
+        Run $python @('-B',(Join-Path $kit 'source\benchmark\compare_releases.py'),'--kit',$kit,'--cache',$Cache,'--out',$paired)
+        if ((Get-FileHash $paired).Hash -ne (Get-FileHash (Join-Path $kit 'source\benchmark\results\paired-2.0.2.json')).Hash) { throw 'Paired release comparison differs' }
         if ((Get-FileHash $output).Hash -ne (Get-FileHash (Join-Path $kit 'source\benchmark\results\release-quality.json')).Hash) { throw 'Aggregate benchmark differs from release' }
     }
     Write-Output 'PASS'

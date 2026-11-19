@@ -22,11 +22,19 @@ def read_weights(schema):
 def reference(normalized_lines,rules):
     score = hits = 0
     triggered = critical = False
+    boundary = r"[a-z0-9_$\x80-\U0010ffff]"
+    extra = {
+        "sleep(": rf"(?<!{boundary})(?:pg_)?sleep \( ?(?=[0-9])",
+        "benchmark(": rf"(?<!{boundary})benchmark \( ?(?=[0-9])",
+        "union select": rf"(?<!{boundary})union (?:all|distinct) select null ?, ?null(?!{boundary})",
+    }
     for line in normalized_lines:
         subtotal = 0
         high = False
         for pattern, weight, flag in rules:
             count = len(re.findall("(?=" + re.escape(pattern) + ")",line))
+            if pattern in extra:
+                count += len(re.findall(extra[pattern], line))
             hits += count
             subtotal += weight*count
             high |= flag and count>0
@@ -90,6 +98,12 @@ def main():
     for s,expected in [("a%3Bb","a;b"),("a%253Bb","a;b"),("a&#59;b","a;b"),("a%3G","a%3g"),
                        ("стоимость+10;","стоимость 10;"),("a%2Bb%2520c","a+b c")]:
         cases.append((s,reference([expected],rules),"normalization"))
+    layout_cases = ["sleep ( 0", "pg_sleep (4", "benchmark ( 7", "asleep (5", "x_pg_sleep (5",
+                    "sleep ( units", "union all select null , null", "union distinct select null,null",
+                    "union all select city,region", "union all select null,null_name",
+                    "union all select null,nullя", "reunion all select null,null"]
+    for text in layout_cases:
+        cases.append((text,reference([text],rules),"context and spelling boundaries"))
     rng=random.Random(seed)
     for i in range(1000):
         text="".join(rng.choices([";","-","а","b"," ","0","🙂","\r\n"],k=rng.randrange(1,65)))
@@ -109,7 +123,7 @@ def main():
             except ValueError:
                 continue
             raise RuntimeError("Self-test failed to reject a corrupted " + key)
-    report={"seed":seed,"cases":len(cases),"hand_cases":len(hand),"seed_rules":len(rules),"generated_benign_cases":1000,
+    report={"seed":seed,"cases":len(cases),"hand_cases":len(hand),"seed_rules":len(rules),"generated_benign_cases":1000,"layout_cases":len(layout_cases),
             "exe_sha256":hashlib.sha256((kit/"SqlScan.exe").read_bytes()).hexdigest(),
             "checks":["score","number of hits","per-line verdict","risk level"],
             "hand_results":[dict(example=n,input=s,score=sc,hits=h,verdict=y,observed_score=int(r["score"]),
