@@ -166,6 +166,11 @@ def main():
             shown = box(mainwin, 1002).window_text()
             assert "1 × 4 = 4" in shown and "есть сигнатура высокого риска" in shown
             assert "Сохранено в журнале" in box(mainwin, 1011).window_text()
+            box(mainwin, 1001).set_edit_text("fixture) and ? + (select case when (2 < 3) then 4 else 8 end)")
+            box(mainwin, 1003).click()
+            shown = box(mainwin, 1002).window_text()
+            assert "Вложенное условие" in shown and "1 × 4 = 4" in shown
+            assert "Сохранено в журнале" in box(mainwin, 1011).window_text()
             print("GUI passed: rule CRUD, file/manual scan, deduplication, three exports, filters, archive, delete, statistics")
         finally:
             win32gui.PostMessage(mainwin.handle, win32con.WM_CLOSE, 0, 0)

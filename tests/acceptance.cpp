@@ -72,6 +72,22 @@ void CheckCore() {
         });
         Require(count == report.totalHits && expanded == (legacy ? 0u : 1u), "dense replay respects matching mode");
     }
+    const std::string projected = "(select case when (2 < 3) then 4 else 8 end)";
+    const auto value = "fixture) and ? + " + projected;
+    auto structured = stock.Analyze(value);
+    Require(structured.totalHits == 1 && structured.totalScore == 4 && structured.suspicious &&
+            structured.contributions[0].pattern == structured.hits[0].pattern &&
+            structured.hits[0].position == structured.normalizedInput.find("and") &&
+            structured.hits[0].position + structured.hits[0].matchedBytes == structured.normalizedInput.size(),
+            "auditable scalar evidence and span");
+    Require(!stock.Analyze(value, true).suspicious && !stock.Analyze("SELECT\n" + value).suspicious &&
+            !stock.Analyze("fixture) and '" + projected + "'").suspicious, "legacy, multiline and quoted text");
+    SqlInjectionDetector adjusted({{"or 1=1", 2, false, 17, "tautology"}}, 5, 1024);
+    auto weighted = adjusted.Analyze(value);
+    Require(weighted.hits[0].ruleId == 17 && weighted.totalScore == 2 && !weighted.suspicious,
+            "structural evidence respects configured weight and risk");
+    SqlInjectionDetector disabled({{"or 1=1", 4, true, 17, "tautology", false}}, 5, 1024);
+    Require(disabled.Analyze(value).totalHits == 0, "disabled rule disables its variant");
     auto dense = stock.Analyze(std::string(kMaxSavedHits + 2, ';'));
     Require(dense.hits.size() == kMaxSavedHits && dense.totalHits == kMaxSavedHits + 2 &&
                 dense.totalScore == static_cast<int>(dense.totalHits),
@@ -128,6 +144,15 @@ bool CheckDatabase() {
         ScanRepository scans(db);
         db.Open(connection);
         auto detector = rules.Detector();
+        const std::string markerValue = "fixture) and ? + (select case when (2 < 3) then 4 else 8 end)";
+        auto nested = detector.Analyze(markerValue);
+        Require(nested.totalScore == 4 && nested.hits.size() == 1 && nested.hits[0].ruleId > 0,
+                "configured rule owns structural evidence");
+        auto nestedId = scans.Save(nested, "manual", "", io::Hash(markerValue), markerValue.size());
+        auto details = scans.ScanHits(nestedId);
+        Require(details.size() == 1 && details[0][2] == nested.hits[0].pattern && details[0][3] == "4",
+                "historical snapshot stores structural reason");
+        scans.DeleteScan(nestedId);
         auto unique = std::to_string(GetCurrentProcessId()) + "-" + std::to_string(GetTickCount64());
         auto pattern = "sqlscan-test-" + unique;
         auto cats = rules.Categories();

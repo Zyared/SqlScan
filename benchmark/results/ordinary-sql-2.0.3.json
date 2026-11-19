@@ -1,0 +1,441 @@
+{
+  "query_families": 24,
+  "valid_statements": 72,
+  "before_FP": 6,
+  "after_FP": 6,
+  "new_FP": 0,
+  "rows": [
+    {
+      "family": "average price",
+      "layout": "original",
+      "before": 0,
+      "after": 0
+    },
+    {
+      "family": "average price",
+      "layout": "line break",
+      "before": 0,
+      "after": 0
+    },
+    {
+      "family": "average price",
+      "layout": "trailing terminator",
+      "before": 0,
+      "after": 0
+    },
+    {
+      "family": "correlated maximum",
+      "layout": "original",
+      "before": 0,
+      "after": 0
+    },
+    {
+      "family": "correlated maximum",
+      "layout": "line break",
+      "before": 0,
+      "after": 0
+    },
+    {
+      "family": "correlated maximum",
+      "layout": "trailing terminator",
+      "before": 0,
+      "after": 0
+    },
+    {
+      "family": "group membership",
+      "layout": "original",
+      "before": 0,
+      "after": 0
+    },
+    {
+      "family": "group membership",
+      "layout": "line break",
+      "before": 0,
+      "after": 0
+    },
+    {
+      "family": "group membership",
+      "layout": "trailing terminator",
+      "before": 0,
+      "after": 0
+    },
+    {
+      "family": "missing relationship",
+      "layout": "original",
+      "before": 0,
+      "after": 0
+    },
+    {
+      "family": "missing relationship",
+      "layout": "line break",
+      "before": 0,
+      "after": 0
+    },
+    {
+      "family": "missing relationship",
+      "layout": "trailing terminator",
+      "before": 0,
+      "after": 0
+    },
+    {
+      "family": "correlated count",
+      "layout": "original",
+      "before": 0,
+      "after": 0
+    },
+    {
+      "family": "correlated count",
+      "layout": "line break",
+      "before": 0,
+      "after": 0
+    },
+    {
+      "family": "correlated count",
+      "layout": "trailing terminator",
+      "before": 0,
+      "after": 0
+    },
+    {
+      "family": "derived table",
+      "layout": "original",
+      "before": 0,
+      "after": 0
+    },
+    {
+      "family": "derived table",
+      "layout": "line break",
+      "before": 0,
+      "after": 0
+    },
+    {
+      "family": "derived table",
+      "layout": "trailing terminator",
+      "before": 0,
+      "after": 0
+    },
+    {
+      "family": "common table expression",
+      "layout": "original",
+      "before": 0,
+      "after": 0
+    },
+    {
+      "family": "common table expression",
+      "layout": "line break",
+      "before": 0,
+      "after": 0
+    },
+    {
+      "family": "common table expression",
+      "layout": "trailing terminator",
+      "before": 0,
+      "after": 0
+    },
+    {
+      "family": "conditional projection",
+      "layout": "original",
+      "before": 0,
+      "after": 0
+    },
+    {
+      "family": "conditional projection",
+      "layout": "line break",
+      "before": 0,
+      "after": 0
+    },
+    {
+      "family": "conditional projection",
+      "layout": "trailing terminator",
+      "before": 0,
+      "after": 0
+    },
+    {
+      "family": "constant case for report",
+      "layout": "original",
+      "before": 0,
+      "after": 0
+    },
+    {
+      "family": "constant case for report",
+      "layout": "line break",
+      "before": 0,
+      "after": 0
+    },
+    {
+      "family": "constant case for report",
+      "layout": "trailing terminator",
+      "before": 0,
+      "after": 0
+    },
+    {
+      "family": "boolean scalar column",
+      "layout": "original",
+      "before": 0,
+      "after": 0
+    },
+    {
+      "family": "boolean scalar column",
+      "layout": "line break",
+      "before": 0,
+      "after": 0
+    },
+    {
+      "family": "boolean scalar column",
+      "layout": "trailing terminator",
+      "before": 0,
+      "after": 0
+    },
+    {
+      "family": "numeric scalar comparison",
+      "layout": "original",
+      "before": 0,
+      "after": 0
+    },
+    {
+      "family": "numeric scalar comparison",
+      "layout": "line break",
+      "before": 0,
+      "after": 0
+    },
+    {
+      "family": "numeric scalar comparison",
+      "layout": "trailing terminator",
+      "before": 0,
+      "after": 0
+    },
+    {
+      "family": "same source joined by keys",
+      "layout": "original",
+      "before": 0,
+      "after": 0
+    },
+    {
+      "family": "same source joined by keys",
+      "layout": "line break",
+      "before": 0,
+      "after": 0
+    },
+    {
+      "family": "same source joined by keys",
+      "layout": "trailing terminator",
+      "before": 0,
+      "after": 0
+    },
+    {
+      "family": "cardinality in tiny report",
+      "layout": "original",
+      "before": 0,
+      "after": 0
+    },
+    {
+      "family": "cardinality in tiny report",
+      "layout": "line break",
+      "before": 0,
+      "after": 0
+    },
+    {
+      "family": "cardinality in tiny report",
+      "layout": "trailing terminator",
+      "before": 0,
+      "after": 0
+    },
+    {
+      "family": "qualified aliases",
+      "layout": "original",
+      "before": 0,
+      "after": 0
+    },
+    {
+      "family": "qualified aliases",
+      "layout": "line break",
+      "before": 0,
+      "after": 0
+    },
+    {
+      "family": "qualified aliases",
+      "layout": "trailing terminator",
+      "before": 0,
+      "after": 0
+    },
+    {
+      "family": "explicit cross join",
+      "layout": "original",
+      "before": 0,
+      "after": 0
+    },
+    {
+      "family": "explicit cross join",
+      "layout": "line break",
+      "before": 0,
+      "after": 0
+    },
+    {
+      "family": "explicit cross join",
+      "layout": "trailing terminator",
+      "before": 0,
+      "after": 0
+    },
+    {
+      "family": "join on a derived table",
+      "layout": "original",
+      "before": 0,
+      "after": 0
+    },
+    {
+      "family": "join on a derived table",
+      "layout": "line break",
+      "before": 0,
+      "after": 0
+    },
+    {
+      "family": "join on a derived table",
+      "layout": "trailing terminator",
+      "before": 0,
+      "after": 0
+    },
+    {
+      "family": "global limit",
+      "layout": "original",
+      "before": 0,
+      "after": 0
+    },
+    {
+      "family": "global limit",
+      "layout": "line break",
+      "before": 0,
+      "after": 0
+    },
+    {
+      "family": "global limit",
+      "layout": "trailing terminator",
+      "before": 0,
+      "after": 0
+    },
+    {
+      "family": "window function",
+      "layout": "original",
+      "before": 0,
+      "after": 0
+    },
+    {
+      "family": "window function",
+      "layout": "line break",
+      "before": 0,
+      "after": 0
+    },
+    {
+      "family": "window function",
+      "layout": "trailing terminator",
+      "before": 0,
+      "after": 0
+    },
+    {
+      "family": "string in projection",
+      "layout": "original",
+      "before": 0,
+      "after": 0
+    },
+    {
+      "family": "string in projection",
+      "layout": "line break",
+      "before": 0,
+      "after": 0
+    },
+    {
+      "family": "string in projection",
+      "layout": "trailing terminator",
+      "before": 0,
+      "after": 0
+    },
+    {
+      "family": "quoted column",
+      "layout": "original",
+      "before": 0,
+      "after": 0
+    },
+    {
+      "family": "quoted column",
+      "layout": "line break",
+      "before": 0,
+      "after": 0
+    },
+    {
+      "family": "quoted column",
+      "layout": "trailing terminator",
+      "before": 0,
+      "after": 0
+    },
+    {
+      "family": "literal text about a subquery",
+      "layout": "original",
+      "before": 0,
+      "after": 0
+    },
+    {
+      "family": "literal text about a subquery",
+      "layout": "line break",
+      "before": 0,
+      "after": 0
+    },
+    {
+      "family": "literal text about a subquery",
+      "layout": "trailing terminator",
+      "before": 0,
+      "after": 0
+    },
+    {
+      "family": "prepared parameter",
+      "layout": "original",
+      "before": 0,
+      "after": 0
+    },
+    {
+      "family": "prepared parameter",
+      "layout": "line break",
+      "before": 0,
+      "after": 0
+    },
+    {
+      "family": "prepared parameter",
+      "layout": "trailing terminator",
+      "before": 0,
+      "after": 0
+    },
+    {
+      "family": "legitimate set operation",
+      "layout": "original",
+      "before": 1,
+      "after": 1
+    },
+    {
+      "family": "legitimate set operation",
+      "layout": "line break",
+      "before": 1,
+      "after": 1
+    },
+    {
+      "family": "legitimate set operation",
+      "layout": "trailing terminator",
+      "before": 1,
+      "after": 1
+    },
+    {
+      "family": "ordinary SQL comment",
+      "layout": "original",
+      "before": 1,
+      "after": 1
+    },
+    {
+      "family": "ordinary SQL comment",
+      "layout": "line break",
+      "before": 1,
+      "after": 1
+    },
+    {
+      "family": "ordinary SQL comment",
+      "layout": "trailing terminator",
+      "before": 1,
+      "after": 1
+    }
+  ]
+}

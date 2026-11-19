@@ -104,6 +104,15 @@ def main():
                     "union all select null,nullя", "reunion all select null,null"]
     for text in layout_cases:
         cases.append((text,reference([text],rules),"context and spelling boundaries"))
+    # Explicit expected outcomes for a small parameter-parser fixture; '?' is unbound.
+    projection = "(select case when (2 < 3) then 4 else 8 end)"
+    fragment = "fixture) and ? + " + projection
+    structural = [(fragment, (4, 1, 1, "Высокий")),
+                  ("select " + projection, (0, 0, 0, "Низкий")),
+                  ("select\n" + fragment, (0, 0, 0, "Низкий")),
+                  ("fixture) and '" + projection + "'", (0, 0, 0, "Низкий")),
+                  ("fixture) and ? + (select inventory from items)", (0, 0, 0, "Низкий"))]
+    cases.extend((value, expected, "independent structural fixture") for value, expected in structural)
     rng=random.Random(seed)
     for i in range(1000):
         text="".join(rng.choices([";","-","а","b"," ","0","🙂","\r\n"],k=rng.randrange(1,65)))
@@ -123,7 +132,7 @@ def main():
             except ValueError:
                 continue
             raise RuntimeError("Self-test failed to reject a corrupted " + key)
-    report={"seed":seed,"cases":len(cases),"hand_cases":len(hand),"seed_rules":len(rules),"generated_benign_cases":1000,"layout_cases":len(layout_cases),
+    report={"seed":seed,"cases":len(cases),"hand_cases":len(hand),"seed_rules":len(rules),"generated_benign_cases":1000,"layout_cases":len(layout_cases),"structural_cases":len(structural),
             "exe_sha256":hashlib.sha256((kit/"SqlScan.exe").read_bytes()).hexdigest(),
             "checks":["score","number of hits","per-line verdict","risk level"],
             "hand_results":[dict(example=n,input=s,score=sc,hits=h,verdict=y,observed_score=int(r["score"]),

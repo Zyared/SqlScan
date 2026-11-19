@@ -13,7 +13,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # Embedded Python runs with an isolated path.
 from verify_quality import HERE, dataset, fetch, scores
 
-PREVIOUS_SHA = "b9c7b4085d5d2ad579590785fb1e92ef570de54516ea9f535bd86ca4982e7c49"
+PREVIOUS_SHA = "842cca258cfb3e0585ed36f346e69ed144dea1072fe82dd8f05dc3cbcddb4fd9"
 
 
 def partition(text):
@@ -76,6 +76,12 @@ def compare(rows, previous, current, work, kaggle):
             result[group] = paired([labels[i] for i in idx], [old[i] for i in idx], [new[i] for i in idx])
         missed = {}
         score_hist = Counter()
+        cohort = {}
+        nested_normals = [i for i, (text, label, _) in enumerate(rows)
+                          if label == 0 and re.search(r"\(\s*select\b", text, re.I)]
+        result["labelled_normal_with_subquery"] = paired([labels[i] for i in nested_normals],
+                                                         [old[i] for i in nested_normals],
+                                                         [new[i] for i in nested_normals])
         for (text, label, _), (pred, score), (now, _) in zip(rows, before, after, strict=True):
             if label == 1 and pred == 0:
                 group = next((name for name, expr in GROUPS if expr.search(text)), "other")
@@ -83,6 +89,22 @@ def compare(rows, previous, current, work, kaggle):
                 bucket["before_FN"] += 1
                 bucket["recovered" if now else "remaining"] += 1
                 score_hist[score] += 1
+                if group == "nested query":
+                    if re.search(r"\bcase\s+when\b", text, re.I):
+                        form = "conditional expression"
+                    elif re.search(r"\b(?:count|sum|max|min|avg)\s*\(", text, re.I):
+                        form = "aggregate expression"
+                    elif re.search(r"\b(?:chr|char|concat|concat_ws)\s*\(", text, re.I):
+                        form = "string expression"
+                    else:
+                        form = "other subquery"
+                    for key in (form, partition(text), "all"):
+                        tally = cohort.setdefault(key, {"previous_misses": 0, "recovered": 0, "remaining": 0})
+                        tally["previous_misses"] += 1
+                        tally["recovered" if now else "remaining"] += 1
+        if cohort.get("all", {}).get("previous_misses") != 1740:
+            raise ValueError("Nested baseline cohort differs from the 2.0.2 report")
+        result["nested_miss_cohort"] = cohort
         result["previous_misses_by_first_matching_group"] = missed
         result["previous_misses_by_total_score"] = dict(sorted(score_hist.items()))
     return result
@@ -92,14 +114,15 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--kit", type=Path, required=True)
     parser.add_argument("--cache", type=Path)
+    parser.add_argument("--offline", action="store_true", help="Require hash-verified local data")
     parser.add_argument("--out", type=Path, required=True)
     args = parser.parse_args()
     kit = args.kit.resolve()
-    previous = kit / "validation/SqlScan-2.0.1.exe"
+    previous = kit / "validation/SqlScan-2.0.2.exe"
     current = kit / "SqlScan.exe"
     hashes = {f.name: hashlib.sha256(f.read_bytes()).hexdigest() for f in (previous, current)}
     if hashes[previous.name] != PREVIOUS_SHA:
-        raise ValueError("Expected the published 2.0.1 binary")
+        raise ValueError("Expected the published 2.0.2 binary")
     result = {"sha256": hashes, "datasets": {}}
     sources = json.loads((HERE / "sources.json").read_text(encoding="utf-8"))
     with tempfile.TemporaryDirectory() as tmp:
@@ -107,11 +130,13 @@ def main():
         cache = args.cache or work
         cache.mkdir(exist_ok=True, parents=True)
         for key, source in sources.items():
-            rows = dataset(key, fetch(key, source, cache))
+            rows = dataset(key, fetch(key, source, cache, args.offline))
             result["datasets"][key] = compare(rows, previous, current, work, key == "kaggle")
     args.out.write_text(json.dumps(result, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
     if any(r["new_FP"] or r["lost_TP"] for r in result["datasets"].values()):
         raise SystemExit("Paired regression: new false alarm or lost labelled detection")
+    if not result["datasets"]["kaggle"]["nested_miss_cohort"]["held_out"]["recovered"]:
+        raise SystemExit("No improvement on reserved nested cases")
     if not result["datasets"]["kaggle"]["held_out"]["new_TP"]:
         raise SystemExit("No improvement on the reserved Kaggle partition")
     print("Paired release comparison passed")

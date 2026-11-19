@@ -1,6 +1,6 @@
 {
   "sha256": {
-    "SqlScan.exe": "842cca258cfb3e0585ed36f346e69ed144dea1072fe82dd8f05dc3cbcddb4fd9",
+    "SqlScan.exe": "83e1fa755f386656651b821ddd7348045dfe4df9c8d579d4b88f0f6033c5b9e0",
     "baseline.exe": "8e29363ed10294878c458e2033715095b8486793a46eada86e43b1be2bfd1b3f",
     "crs942.exe": "2f7bf4d9acf98e1e65bb9a872dd24b88d5e817d210bfd17a087d359684af33ee",
     "libinjection.dll": "6829880fc16214e9e6977d8c41d9aa6ea3beba957f99cc47ad9e708a96815cb7"
@@ -71,15 +71,15 @@
       },
       "SqlScan 2.0": {
         "rows": 10051,
-        "flagged": 2136,
-        "TP": 2135,
+        "flagged": 2282,
+        "TP": 2281,
         "FP": 1,
         "TN": 6433,
-        "FN": 1482,
-        "precision": 0.999532,
-        "recall": 0.590268,
+        "FN": 1336,
+        "precision": 0.999562,
+        "recall": 0.630633,
         "FPR": 0.000155,
-        "F1": 0.742221,
+        "F1": 0.773351,
         "groups": {
           "numeric": {
             "rows": 1439,
@@ -119,15 +119,15 @@
           },
           "SQLi – unspecified": {
             "rows": 3617,
-            "flagged": 2135,
-            "TP": 2135,
+            "flagged": 2281,
+            "TP": 2281,
             "FP": 0,
             "TN": 0,
-            "FN": 1482,
+            "FN": 1336,
             "precision": 1.0,
-            "recall": 0.590268,
+            "recall": 0.630633,
             "FPR": null,
-            "F1": 0.74235
+            "F1": 0.773483
           }
         }
       },
@@ -321,15 +321,15 @@
       },
       "SqlScan 2.0": {
         "rows": 200,
-        "flagged": 61,
-        "TP": 61,
+        "flagged": 65,
+        "TP": 65,
         "FP": 0,
         "TN": 100,
-        "FN": 39,
+        "FN": 35,
         "precision": 1.0,
-        "recall": 0.61,
+        "recall": 0.65,
         "FPR": 0.0,
-        "F1": 0.757764,
+        "F1": 0.787879,
         "groups": {
           "other benign text": {
             "rows": 60,
@@ -369,15 +369,15 @@
           },
           "SQLi – unspecified": {
             "rows": 100,
-            "flagged": 61,
-            "TP": 61,
+            "flagged": 65,
+            "TP": 65,
             "FP": 0,
             "TN": 0,
-            "FN": 39,
+            "FN": 35,
             "precision": 1.0,
-            "recall": 0.61,
+            "recall": 0.65,
             "FPR": null,
-            "F1": 0.757764
+            "F1": 0.787879
           }
         }
       },
@@ -1659,27 +1659,27 @@
       },
       "SqlScan 2.0": {
         "rows": 30919,
-        "flagged": 6532,
-        "TP": 5936,
+        "flagged": 6963,
+        "TP": 6367,
         "FP": 596,
         "TN": 18941,
-        "FN": 5446,
-        "precision": 0.908757,
-        "recall": 0.521525,
+        "FN": 5015,
+        "precision": 0.914405,
+        "recall": 0.559392,
         "FPR": 0.030506,
-        "F1": 0.662722,
+        "F1": 0.69414,
         "groups": {
           "SQLi – unspecified": {
             "rows": 11382,
-            "flagged": 5936,
-            "TP": 5936,
+            "flagged": 6367,
+            "TP": 6367,
             "FP": 0,
             "TN": 0,
-            "FN": 5446,
+            "FN": 5015,
             "precision": 1.0,
-            "recall": 0.521525,
+            "recall": 0.559392,
             "FPR": null,
-            "F1": 0.68553
+            "F1": 0.717449
           },
           "other benign text": {
             "rows": 5040,

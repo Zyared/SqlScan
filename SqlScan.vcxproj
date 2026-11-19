@@ -160,6 +160,7 @@
     <ClInclude Include="resource.h" />
     <ClInclude Include="SqlScan_OralDefenseNotes.h" />
     <ClInclude Include="SqlInjectionDetector.h" />
+    <ClInclude Include="ScalarPredicate.h" />
     <ClInclude Include="Database.h" />
     <ClInclude Include="ReportIO.h" />
     <ClInclude Include="SqlScan.h" />

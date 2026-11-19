@@ -27,9 +27,11 @@ CATEGORIES = {"patt_union": "UNION", "patt_time": "time-based", "patt_error": "e
 def digest(data):
     return hashlib.sha256(data).hexdigest()
 
-def fetch(key, source, cache):
+def fetch(key, source, cache, offline=False):
     path = cache / key
     if not path.exists():
+        if offline:
+            raise FileNotFoundError(f"Offline cache is missing {key}")
         with urllib.request.urlopen(source["url"], timeout=180) as response:
             data = response.read()
         if "member" in source:
@@ -133,6 +135,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--kit", required=True, type=Path)
     parser.add_argument("--cache", type=Path, help="Reusable hash-verified corpus cache")
+    parser.add_argument("--offline", action="store_true", help="Require local data and forbid downloads")
     parser.add_argument("--out", required=True, type=Path)
     args = parser.parse_args()
     kit = args.kit.resolve()
@@ -149,7 +152,7 @@ def main():
         cache = args.cache or temp
         cache.mkdir(exist_ok=True,parents=True)
         for key, source in sources.items():
-            data = fetch(key,source,cache)
+            data = fetch(key,source,cache,args.offline)
             rows = dataset(key,data)
             report["datasets"][key] = evaluate(rows,temp,exe,baseline,crs,detect)
             print(key, len(rows), flush=True)

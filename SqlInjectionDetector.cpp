@@ -1,4 +1,5 @@
 #include "SqlInjectionDetector.h"
+#include "ScalarPredicate.h"
 #include <algorithm>
 #include <charconv>
 #include <limits>
@@ -260,6 +261,25 @@ DetectionReport SqlInjectionDetector::Analyze(std::string_view input, bool legac
             if (r.hits.size() < kMaxSavedHits)
                 r.hits.push_back(Detail(rule, line, number, pos, length));
         });
+        // A structural fallback for one complete parameter value. Ordinary multi-line SQL and
+        // previously scored lines keep their results. This path can produce only one detail.
+        if (!legacy && !r.inputTruncated && number == 1 && r.totalHits == 0 &&
+            (end == input.npos || input.find_first_not_of("\r\n", end) == input.npos)) {
+            if (const auto evidence = scalar_predicate::Match(line); evidence.length) {
+                const auto family = std::find_if(rules_.begin(), rules_.end(), [](const PatternRule &rule) {
+                    return rule.enabled && rule.category == "tautology" && rule.pattern == "or 1=1";
+                });
+                if (family != rules_.end()) {
+                    auto hit = Detail(*family, line, number, evidence.position, evidence.length);
+                    hit.pattern = evidence.description;
+                    r.contributions.push_back({hit.pattern, family->weight, 1});
+                    r.hits.push_back(std::move(hit));
+                    ++r.totalHits;
+                    high = family->highRisk;
+                    score = family->weight;
+                }
+            }
+        }
         const bool suspicious = high || score >= threshold_;
         r.totalScore = (std::min)(r.totalScore, (std::numeric_limits<int>::max)() - score) + score;
         r.suspicious |= suspicious;

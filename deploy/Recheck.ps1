@@ -1,7 +1,8 @@
 [CmdletBinding()]
-param([switch]$Quality, [string]$Cache, [string]$ResultDirectory)
+param([switch]$Quality, [string]$Cache, [string]$ResultDirectory, [switch]$Offline)
 $ErrorActionPreference = 'Stop'
 $env:PSModulePath = (Join-Path $PSHOME 'Modules') + ';' + $env:PSModulePath
+if ($Quality -and $Offline -and !$Cache) { throw 'Offline quality checks require -Cache with previously verified data.' }
 $kit = $PSScriptRoot
 $python = Join-Path $kit 'validation\python\python.exe'
 if (!$ResultDirectory) {
@@ -51,15 +52,21 @@ try {
     Run $python @('-B',(Join-Path $kit 'source\tests\score_audit.py'),$kit,(Join-Path $result 'scores.json'))
     Run $python @('-B',(Join-Path $kit 'source\tests\gui_smoke.py'),(Join-Path $kit 'SqlScan.exe'))
     Run $python @('-B',(Join-Path $kit 'source\tests\release_checks.py'),$kit,$data,[string]$port)
+    $ordinary = Join-Path $result 'ordinary-sql.json'
+    Run $python @('-B',(Join-Path $kit 'source\tests\benign_subqueries.py'),$kit,$ordinary)
+    if ((Get-FileHash $ordinary).Hash -ne (Get-FileHash (Join-Path $kit 'source\benchmark\results\ordinary-sql-2.0.3.json')).Hash) { throw 'Ordinary SQL results differ' }
     if ($Quality) {
         $output = Join-Path $result 'quality.json'
         $opts = @('-B',(Join-Path $kit 'source\benchmark\verify_quality.py'),'--kit',$kit,'--out',$output)
         if (!$Cache) { $Cache = Join-Path $data 'quality-cache' }
         $opts += @('--cache',$Cache)
+        if ($Offline) { $opts += '--offline' }
         Run $python $opts
         $paired = Join-Path $result 'paired.json'
-        Run $python @('-B',(Join-Path $kit 'source\benchmark\compare_releases.py'),'--kit',$kit,'--cache',$Cache,'--out',$paired)
-        if ((Get-FileHash $paired).Hash -ne (Get-FileHash (Join-Path $kit 'source\benchmark\results\paired-2.0.2.json')).Hash) { throw 'Paired release comparison differs' }
+        $compare = @('-B',(Join-Path $kit 'source\benchmark\compare_releases.py'),'--kit',$kit,'--cache',$Cache,'--out',$paired)
+        if ($Offline) { $compare += '--offline' }
+        Run $python $compare
+        if ((Get-FileHash $paired).Hash -ne (Get-FileHash (Join-Path $kit 'source\benchmark\results\paired-2.0.3.json')).Hash) { throw 'Paired release comparison differs' }
         if ((Get-FileHash $output).Hash -ne (Get-FileHash (Join-Path $kit 'source\benchmark\results\release-quality.json')).Hash) { throw 'Aggregate benchmark differs from release' }
     }
     Write-Output 'PASS'

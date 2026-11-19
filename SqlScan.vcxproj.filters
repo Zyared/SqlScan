@@ -30,6 +30,9 @@
     <ClInclude Include="ReportIO.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
+    <ClInclude Include="ScalarPredicate.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
     <ClInclude Include="SqlInjectionDetector.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
