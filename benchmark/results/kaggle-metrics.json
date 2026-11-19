@@ -1,0 +1,41 @@
+{
+  "source": "Kaggle sajid576/sql-injection-dataset v1 / Modified_SQL_Dataset.csv",
+  "reference_sha256": "6829880fc16214e9e6977d8c41d9aa6ea3beba957f99cc47ad9e708a96815cb7",
+  "dataset_sha256": "60af1d160dcc5c3f61440dc8f0c019e8898243951e283402857c10294c6f5cc5",
+  "exe_sha256": "3a1edbacd210c355b5aaf149653c122d9418475f16e7a966f37cb604daba51af",
+  "rows": 30919,
+  "SqlScan 1.0": {
+    "TP": 4509,
+    "FP": 594,
+    "TN": 18943,
+    "FN": 6873,
+    "precision": 0.883598,
+    "recall": 0.396152,
+    "FPR": 0.030404,
+    "F1": 0.547043,
+    "FN_without_hits": 6661,
+    "FN_below_threshold": 212
+  },
+  "SqlScan 2.0": {
+    "TP": 4512,
+    "FP": 596,
+    "TN": 18941,
+    "FN": 6870,
+    "precision": 0.88332,
+    "recall": 0.396415,
+    "FPR": 0.030506,
+    "F1": 0.547241,
+    "FN_without_hits": 6660,
+    "FN_below_threshold": 210
+  },
+  "libinjection": {
+    "TP": 10419,
+    "FP": 7033,
+    "TN": 12504,
+    "FN": 963,
+    "precision": 0.597009,
+    "recall": 0.915393,
+    "FPR": 0.359984,
+    "F1": 0.722688
+  }
+}

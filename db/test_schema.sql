@@ -59,11 +59,14 @@ BEGIN
 END;
 $$;
 
+\ir upgrade_2.sql
 \ir schema.sql
+\ir upgrade_2.sql
 
 DO $$
 BEGIN
-    IF (SELECT count(*) FROM sqlscan.rule) <> 17 OR
+    IF NOT EXISTS (SELECT FROM sqlscan.setting WHERE key = 'schema_version' AND value = '2') OR
+       (SELECT count(*) FROM sqlscan.rule) <> 17 OR
        EXISTS (SELECT FROM sqlscan.rule WHERE pattern IN ('1=1', ';')) OR
        NOT EXISTS (SELECT FROM sqlscan.rule WHERE pattern = 'renamed rule'
                    AND weight = 4 AND high_risk AND NOT enabled) OR

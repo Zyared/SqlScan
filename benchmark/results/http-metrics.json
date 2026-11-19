@@ -1,0 +1,41 @@
+{
+  "source": "HttpParamsDataset / payload_test.csv @ 926670a710283f87c05b554680facf3f9530548c",
+  "reference_sha256": "6829880fc16214e9e6977d8c41d9aa6ea3beba957f99cc47ad9e708a96815cb7",
+  "dataset_sha256": "d8015e256ce4499c8ac7a8be8dd25de6487cf018601edf1a03a408a2c8f0e39d",
+  "exe_sha256": "3a1edbacd210c355b5aaf149653c122d9418475f16e7a966f37cb604daba51af",
+  "rows": 10051,
+  "SqlScan 1.0": {
+    "TP": 2028,
+    "FP": 1,
+    "TN": 6433,
+    "FN": 1589,
+    "precision": 0.999507,
+    "recall": 0.560686,
+    "FPR": 0.000155,
+    "F1": 0.718385,
+    "FN_without_hits": 1302,
+    "FN_below_threshold": 287
+  },
+  "SqlScan 2.0": {
+    "TP": 2028,
+    "FP": 1,
+    "TN": 6433,
+    "FN": 1589,
+    "precision": 0.999507,
+    "recall": 0.560686,
+    "FPR": 0.000155,
+    "F1": 0.718385,
+    "FN_without_hits": 1302,
+    "FN_below_threshold": 287
+  },
+  "libinjection": {
+    "TP": 3504,
+    "FP": 0,
+    "TN": 6434,
+    "FN": 113,
+    "precision": 1.0,
+    "recall": 0.968759,
+    "FPR": 0.0,
+    "F1": 0.984131
+  }
+}

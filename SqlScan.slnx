@@ -4,4 +4,7 @@
     <Platform Name="x86" />
   </Configurations>
   <Project Path="SqlScan.vcxproj" Id="b02523bd-269c-40f8-8576-ac3b4c479608" />
+  <Project Path="tests/NativeTests.vcxproj" Id="b66ff2ae-51f3-429a-9fcc-8778ab980119">
+    <Build Solution="*|x86" Project="false" />
+  </Project>
 </Solution>
