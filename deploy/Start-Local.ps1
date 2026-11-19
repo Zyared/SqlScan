@@ -6,6 +6,9 @@ param(
     [switch]$PrepareOnly
 )
 $ErrorActionPreference = 'Stop'
+# A launch from a PowerShell 7 host can inherit that host's module directories.
+# Prefer Windows PowerShell's own security and storage modules in this process.
+$env:PSModulePath = (Join-Path $PSHOME 'Modules') + ';' + $env:PSModulePath
 $root = [IO.Path]::GetFullPath($DataRoot)
 $cluster = Join-Path $root 'cluster'
 $appDir = $PSScriptRoot
