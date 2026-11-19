@@ -72,11 +72,32 @@ try {
     } else { $settings = Import-Clixml -LiteralPath $settingsPath }
     if (!(Test-Path (Join-Path $cluster 'PG_VERSION'))) {
         $passfile = Join-Path $root ([Guid]::NewGuid().ToString('N') + '.tmp')
+        $share = Join-Path (Split-Path $PostgresBin -Parent) 'share'
+        $bootstrapDrive = $null
         try {
+            # initdb embeds its share path in a UTF-8 COPY statement using the
+            # Windows ANSI code page. Give that statement an ASCII path.
+            if ($share -match '[^\x00-\x7F]') {
+                $taken = [Environment]::GetLogicalDrives()
+                foreach ($code in 90..68) {
+                    $drive = ([char]$code).ToString() + ':'
+                    if ($taken -contains ($drive + '\')) { continue }
+                    & "$env:SystemRoot\System32\subst.exe" $drive $share *> $null
+                    if ($LASTEXITCODE -eq 0) {
+                        $bootstrapDrive = $drive
+                        $share = $drive + '\'
+                        break
+                    }
+                }
+                if (!$bootstrapDrive) { throw 'No free drive letter for temporary PostgreSQL initialization.' }
+            }
             [IO.File]::WriteAllText($passfile,$settings.Owner.GetNetworkCredential().Password)
-            & (Join-Path $PostgresBin 'initdb.exe') -D $cluster --username=sqlscan_owner --auth=scram-sha-256 --encoding=UTF8 --locale=C "--pwfile=$passfile"
+            & (Join-Path $PostgresBin 'initdb.exe') -D $cluster -L $share --username=sqlscan_owner --auth=scram-sha-256 --encoding=UTF8 --locale=C "--pwfile=$passfile"
             if ($LASTEXITCODE) { throw 'Could not initialize the local PostgreSQL cluster.' }
-        } finally { if(Test-Path $passfile){ Remove-Item -LiteralPath $passfile } }
+        } finally {
+            if ($bootstrapDrive) { & "$env:SystemRoot\System32\subst.exe" $bootstrapDrive /d | Out-Null }
+            if(Test-Path $passfile){ Remove-Item -LiteralPath $passfile }
+        }
     }
     & $ctl status -D $cluster *> $null
     if ($LASTEXITCODE -ne 0) {
