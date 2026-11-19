@@ -1,25 +1,46 @@
 #pragma once
-/* Файл генерируется/правится вместе с .rc (ресурсы диалога). Числа — уникальные ID в пределах проекта. */
-
-/* IDD_ — идентификатор **диалогового шаблона** (окно с кнопками). В коде: CDialogEx(IDD_SQLSCAN_DIALOG). */
 #define IDD_SQLSCAN_DIALOG 101
-
-/* IDC_ — идентификаторы **контролов внутри диалога** (поля, кнопки, статики). */
-#define IDC_EDIT_INPUT 1001   /* Многострочное поле ввода (обычный EDIT). */
-#define IDC_EDIT_OUTPUT 1002  /* Поле вывода отчёта (Rich Edit в .rc). */
-#define IDC_BTN_CHECK 1003    /* Кнопка «Проверить». */
-#define IDC_BTN_LOAD 1004     /* «Загрузить из файла». */
-#define IDC_BTN_SAVE 1005     /* «Сохранить отчёт». */
-#define IDC_STATIC_IN 1006    /* Подпись «Введите строку...». */
-#define IDC_STATIC_OUT 1007   /* Подпись «Результат:». */
-
-/* Блок только для редактора ресурсов Visual Studio (не для компилятора обычного кода). */
-#ifdef APSTUDIO_INVOKED
-#ifndef APSTUDIO_READONLY_SYMBOLS
-/* Следующие свободные номера при добавлении новых ресурсов/контролов в дизайнере. */
-#define _APS_NEXT_RESOURCE_VALUE 102
-#define _APS_NEXT_COMMAND_VALUE 40001
-#define _APS_NEXT_CONTROL_VALUE 1008
-#define _APS_NEXT_SYMED_VALUE 102
-#endif
-#endif
+#define IDD_CONNECT 102
+#define IDD_RULE 103
+#define IDD_FILTER 104
+#define IDD_DETAIL 105
+#define IDR_SCHEMA 110
+#define IDR_UPGRADE 111
+#define IDR_MENU 112
+#define IDC_EDIT_INPUT 1001
+#define IDC_EDIT_OUTPUT 1002
+#define IDC_BTN_CHECK 1003
+#define IDC_BTN_LOAD 1004
+#define IDC_BTN_SAVE 1005
+#define IDC_STATIC_IN 1006
+#define IDC_STATIC_OUT 1007
+#define IDC_TABS 1010
+#define IDC_STATUS 1011
+#define IDC_TABLE 1012
+#define IDC_ACTION1 1013
+#define IDC_ACTION2 1014
+#define IDC_ACTION3 1015
+#define IDC_ACTION4 1016
+#define IDC_PAGE_PREV 1017
+#define IDC_PAGE_NEXT 1018
+#define IDC_CHART 1019
+#define IDC_PAGE_LABEL 1020
+#define IDC_CONN 1021
+#define IDC_TEST 1022
+#define IDC_PATTERN 1031
+#define IDC_CATEGORY 1032
+#define IDC_WEIGHT 1033
+#define IDC_HIGH 1034
+#define IDC_ENABLED 1035
+#define IDC_SEARCH 1041
+#define IDC_FROM 1042
+#define IDC_UNTIL 1043
+#define IDC_VERDICT 1044
+#define IDC_MIN_SCORE 1045
+#define IDC_SOURCE 1046
+#define IDC_DETAIL 1051
+#define IDC_EXPORT 1052
+#define ID_CONNECT 40001
+#define ID_OFFLINE 40002
+#define ID_QUIT 40003
+#define ID_ABOUT_SCAN 40004

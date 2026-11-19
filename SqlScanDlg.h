@@ -1,40 +1,64 @@
 #pragma once
-
+#include "Database.h"
 #include "resource.h"
-#include "SqlInjectionDetector.h"
+#include <optional>
+
+class ActivityChart : public CWnd {
+  public:
+    Rows days;
+
+  protected:
+    afx_msg void OnPaint();
+    DECLARE_MESSAGE_MAP()
+};
 
 class CSqlScanDlg : public CDialogEx {
-public:
-    explicit CSqlScanDlg(CWnd* pParent = nullptr);
+  public:
+    explicit CSqlScanDlg(CWnd *parent = nullptr);
 
-    enum { IDD = IDD_SQLSCAN_DIALOG };
-
-protected:
-    void DoDataExchange(CDataExchange* pDX) override;
+  protected:
+    void DoDataExchange(CDataExchange *) override;
     BOOL OnInitDialog() override;
-    afx_msg void OnBnClickedCheck();
-    afx_msg void OnBnClickedLoad();
-    afx_msg void OnBnClickedSave();
-    afx_msg void OnSize(UINT nType, int cx, int cy);
-    afx_msg void OnGetMinMaxInfo(MINMAXINFO* lpMMI);
-
+    void OnOK() override {}
+    afx_msg void OnSize(UINT, int, int);
+    afx_msg void OnGetMinMaxInfo(MINMAXINFO *);
+    afx_msg void OnTab(NMHDR *, LRESULT *);
+    afx_msg void OnTableOpen(NMHDR *, LRESULT *);
+    afx_msg void OnSort(NMHDR *, LRESULT *);
+    afx_msg void OnAction(UINT);
+    afx_msg void OnChanged();
+    afx_msg void OnScan();
+    afx_msg void OnLoad();
+    afx_msg void OnExport();
+    afx_msg void OnConnect();
+    afx_msg void OnOffline();
+    afx_msg void OnAbout();
     DECLARE_MESSAGE_MAP()
-
-private:
+  private:
+    CTabCtrl tabs_;
+    CListCtrl table_;
+    CRichEditCtrl output_;
+    ActivityChart chart_;
+    DbConnection db_;
+    RuleRepository rules_{db_};
+    ScanRepository scans_{db_};
     SqlInjectionDetector detector_;
-    bool layoutReady_ = false;
-    CRichEditCtrl m_editOutput;
-
-    void LayoutControls(int cx, int cy);
-    void FillReportRich(const DetectionReport& r);
-    void AppendRichText(COLORREF cr, const CString& text);
-    void AppendNormalizedWithHighlights(
-        const std::string& normalized,
-        const std::vector<DetectionHit>& hits);
-    static COLORREF ScoreToGradientColor(int score);
-
-    static std::string CStringToUtf8(const CString& s);
-    static CString Utf8ToCString(const std::string& s);
-    static BOOL LoadTextFile(const CString& path, CString& out, CString& err);
-    static BOOL SaveTextFileUtf8(const CString& path, const CString& text);
+    std::wstring connection_;
+    HistoryFilter filter_;
+    Rows rows_;
+    int page_ = 0;
+    bool more_ = false, ready_ = false, loading_ = false;
+    std::string filename_, fileText_, fileRaw_, notice_;
+    std::optional<DetectionReport> report_;
+    int Tab() const { return tabs_.GetCurSel(); }
+    void Layout();
+    void Refresh();
+    void Status();
+    void Connect();
+    void Detail(std::string id);
+    void Rule(bool add);
+    void Filters();
+    void ExportHistory();
+    void SetRows(const Rows &data, const std::vector<std::pair<std::wstring, int>> &columns);
+    void RenderResult();
 };

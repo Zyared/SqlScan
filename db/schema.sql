@@ -6,7 +6,7 @@ BEGIN
     PERFORM pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtext('sqlscan.schema'), 0);
 
     IF pg_catalog.to_regclass('sqlscan.setting') IS NOT NULL THEN
-        IF EXISTS (SELECT FROM sqlscan.setting WHERE key = 'schema_version' AND value = '1') THEN
+        IF EXISTS (SELECT FROM sqlscan.setting WHERE key = 'schema_version' AND value IN ('1', '2')) THEN
             RETURN;
         END IF;
         RAISE EXCEPTION 'Unsupported SqlScan schema version';
