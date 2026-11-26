@@ -1,7 +1,6 @@
 [CmdletBinding()]
 param([switch]$Quality, [string]$Cache, [string]$ResultDirectory, [switch]$Offline)
 $ErrorActionPreference = 'Stop'
-$env:PSModulePath = (Join-Path $PSHOME 'Modules') + ';' + $env:PSModulePath
 if ($Quality -and $Offline -and !$Cache) { throw 'Offline quality checks require -Cache with previously verified data.' }
 $kit = $PSScriptRoot
 $python = Join-Path $kit 'validation\python\python.exe'
@@ -11,17 +10,32 @@ if (!$ResultDirectory) {
 $result = [IO.Directory]::CreateDirectory($ResultDirectory).FullName
 $data = Join-Path ([IO.Path]::GetTempPath()) ('sqlscan-qa-' + [Guid]::NewGuid().ToString('N'))
 [IO.Directory]::CreateDirectory($data) | Out-Null
+$log = [IO.StreamWriter]::new((Join-Path $result 'checks.txt'), $false, [Text.UTF8Encoding]::new($true))
+$log.AutoFlush = $true
 function Run([string]$path, [string[]]$arguments) {
-    & $path @arguments
+    $null = Get-Item -LiteralPath $path -ErrorAction Stop
+    $log.WriteLine("RUN " + [IO.Path]::GetFileName($path))
+    # Windows PowerShell 5 may present a native stderr line as a non-terminating error.
+    # Keep that diagnostic and use the process exit code to decide the result.
+    $ErrorActionPreference = 'Continue'
+    & $path @arguments 2>&1 | ForEach-Object {
+        $line = [string]$_
+        $log.WriteLine($line)
+        Write-Output $line
+    }
     if ($LASTEXITCODE) { throw "Check failed: $([IO.Path]::GetFileName($path)) ($LASTEXITCODE)" }
 }
 $bin = Join-Path $kit 'runtime\pgsql\bin'
-$env:PGCLIENTENCODING = 'UTF8'
-$env:PYTHONUTF8 = '1'
-$env:PYTHONIOENCODING = 'utf-8'
 $dsnKey = $null
-Start-Transcript -LiteralPath (Join-Path $result 'checks.txt') | Out-Null
+$prior = @{}
+foreach ($keyName in 'PSModulePath','PATH','PGCLIENTENCODING','PGPASSWORD','PYTHONUTF8','PYTHONIOENCODING','SQLSCAN_CONNECTION','SQLSCAN_TEST_CONNECTION') {
+    $prior[$keyName] = [Environment]::GetEnvironmentVariable($keyName, 'Process')
+}
 try {
+    $env:PSModulePath = (Join-Path $PSHOME 'Modules') + ';' + $env:PSModulePath
+    $env:PGCLIENTENCODING = 'UTF8'
+    $env:PYTHONUTF8 = '1'
+    $env:PYTHONIOENCODING = 'utf-8'
     Run $python @('-B', (Join-Path $kit 'source\tests\check_manifest.py'), $kit)
     & (Join-Path $kit 'Start-Local.ps1') -DataRoot $data -PrepareOnly
     $config = Import-Clixml -LiteralPath (Join-Path $data 'instance.xml')
@@ -66,21 +80,35 @@ try {
         $compare = @('-B',(Join-Path $kit 'source\benchmark\compare_releases.py'),'--kit',$kit,'--cache',$Cache,'--out',$paired)
         if ($Offline) { $compare += '--offline' }
         Run $python $compare
-        if ((Get-FileHash $paired).Hash -ne (Get-FileHash (Join-Path $kit 'source\benchmark\results\paired-2.0.3.json')).Hash) { throw 'Paired release comparison differs' }
-        if ((Get-FileHash $output).Hash -ne (Get-FileHash (Join-Path $kit 'source\benchmark\results\release-quality.json')).Hash) { throw 'Aggregate benchmark differs from release' }
+        $compareResult = Join-Path $kit 'source\tests\check_benchmark.py'
+        Run $python @('-B',$compareResult,$kit,(Join-Path $kit 'source\benchmark\results\paired-2.0.3.json'),$paired)
+        Run $python @('-B',$compareResult,$kit,(Join-Path $kit 'source\benchmark\results\release-quality.json'),$output)
+        Run $python @('-B',(Join-Path $kit 'source\benchmark\verify_refactor.py'),
+            '--previous',(Join-Path $kit 'validation\SqlScan-2.0.3.exe'),'--kit',$kit,
+            '--cache',$Cache,'--out',(Join-Path $result 'refactor.json'))
     }
-    Write-Output 'PASS'
+} catch {
+    $log.WriteLine("FAIL " + $_.Exception.Message)
+    throw
 } finally {
-    Stop-Transcript | Out-Null
-    try { & (Join-Path $kit 'Start-Local.ps1') -DataRoot $data -Stop }
-    finally {
-        if ($dsnKey -and (Test-Path -LiteralPath $dsnKey)) { Remove-Item -LiteralPath $dsnKey }
-        if ((Test-Path -LiteralPath $data) -and !(Test-Path -LiteralPath (Join-Path $data 'cluster\postmaster.pid'))) {
-            $verified = Get-Item -LiteralPath $data
-            if ($verified.Parent.FullName.TrimEnd('\') -eq [IO.Path]::GetTempPath().TrimEnd('\') -and $verified.Name -match '^sqlscan-qa-[0-9a-f]{32}$' -and !($verified.Attributes -band [IO.FileAttributes]::ReparsePoint)) {
-                Remove-Item -LiteralPath $verified.FullName -Recurse -Force
+    try {
+        try { & (Join-Path $kit 'Start-Local.ps1') -DataRoot $data -Stop }
+        finally {
+            if ($dsnKey -and (Test-Path -LiteralPath $dsnKey)) { Remove-Item -LiteralPath $dsnKey }
+            if ((Test-Path -LiteralPath $data) -and !(Test-Path -LiteralPath (Join-Path $data 'cluster\postmaster.pid'))) {
+                $verified = Get-Item -LiteralPath $data
+                if ($verified.Parent.FullName.TrimEnd('\') -eq [IO.Path]::GetTempPath().TrimEnd('\') -and $verified.Name -match '^sqlscan-qa-[0-9a-f]{32}$' -and !($verified.Attributes -band [IO.FileAttributes]::ReparsePoint)) {
+                    Remove-Item -LiteralPath $verified.FullName -Recurse -Force
+                }
             }
+            Write-Output "Report: $result"
         }
-        Write-Output "Report: $result"
+    } finally {
+        foreach ($keyName in $prior.Keys) {
+            [Environment]::SetEnvironmentVariable($keyName, $prior[$keyName], 'Process')
+        }
+        $log.Dispose()
     }
 }
+[IO.File]::AppendAllText((Join-Path $result 'checks.txt'), "PASS" + [Environment]::NewLine)
+Write-Output 'PASS'

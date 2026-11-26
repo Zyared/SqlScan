@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <chrono>
 #include <iostream>
+#include <sstream>
 #include <stdexcept>
 using Clock = std::chrono::steady_clock;
 void Require(bool condition, const char *name) {
@@ -82,6 +83,25 @@ void CheckCore() {
             "auditable scalar evidence and span");
     Require(!stock.Analyze(value, true).suspicious && !stock.Analyze("SELECT\n" + value).suspicious &&
             !stock.Analyze("fixture) and '" + projected + "'").suspicious, "legacy, multiline and quoted text");
+    auto records = stock.AnalyzeLog("ordinary record\r\n" + value + "\n" + value);
+    Require(records.totalHits == 2 && records.totalScore == 8 && !records.lines[0].suspicious &&
+                records.hits[0].line == 2 && records.hits[1].line == 3 &&
+                records.contributions.size() == 1 && records.contributions[0].occurrences == 2,
+            "independent log records and grouped score contributions");
+    const std::string denseLog = std::string(kMaxSavedHits, ';') + "\r\n" + value;
+    auto replay = stock.AnalyzeLog(denseLog);
+    std::size_t enumerated = 0;
+    replay.ForEachHit([&](const DetectionHit &hit) {
+        if (++enumerated == kMaxSavedHits + 1)
+            Require(hit.line == 2 && hit.pattern == structured.hits[0].pattern &&
+                        hit.position == structured.hits[0].position, "dense log structural detail");
+    });
+    Require(enumerated == replay.totalHits && replay.totalHits == kMaxSavedHits + 1, "dense log count");
+    SqlInjectionDetector capped(stock.Rules(), 5, value.size());
+    Require(capped.AnalyzeLog(value + "\nnext record").suspicious &&
+                !capped.AnalyzeLog(value + " unfinished").suspicious, "complete log record at byte cap");
+    Require(marker.Analyze(std::string("marker\0token", 12)).suspicious,
+            "embedded NUL normalized consistently in the public engine");
     SqlInjectionDetector adjusted({{"or 1=1", 2, false, 17, "tautology"}}, 5, 1024);
     auto weighted = adjusted.Analyze(value);
     Require(weighted.hits[0].ruleId == 17 && weighted.totalScore == 2 && !weighted.suspicious,
@@ -116,6 +136,19 @@ void CheckCore() {
             "BOM");
     Require(io::DecodeFile(std::string("a\0b", 3)) == "a b", "NUL conversion");
     Require(io::Html("<&>") == "&lt;&amp;&gt;" && io::Csv("=1") == "\"'=1\"", "report escaping");
+    auto escaped = SqlInjectionDetector({{"<m>", 3, true, 1, "section&name"}}, 5, 256)
+                       .Analyze("one\n<m><m>\nthree");
+    auto clipped = io::HighRiskSpans(escaped, 8);
+    Require(clipped.size() == 1 && clipped.front().begin == 4 && clipped.front().end == 8,
+            "adjacent highlight spans clipped to preview");
+    for (const auto fmt : {"html", "csv", "txt"}) {
+        std::ostringstream stream;
+        io::WriteReport(stream, escaped, fmt);
+        Require(stream.str() == io::Report(escaped, fmt), "streamed full report");
+    }
+    const auto html = io::Report(escaped, "html");
+    Require(html.find("<mark>&lt;m&gt;&lt;m&gt;</mark>") != std::string::npos &&
+            html.find("section&amp;name") != std::string::npos, "HTML escape before highlighting");
     std::string input(kMaxAnalyzeInputBytes, 'a');
     auto start = Clock::now();
     auto large = stock.Analyze(input);
@@ -143,6 +176,21 @@ bool CheckDatabase() {
         RuleRepository rules(db);
         ScanRepository scans(db);
         db.Open(connection);
+        db.Transaction([&] {
+            const auto old = db.Query(L"SELECT value FROM sqlscan.setting WHERE key='suspicious_score_threshold'").at(0);
+            const auto setThreshold = L"UPDATE sqlscan.setting SET value=? WHERE key='suspicious_score_threshold'";
+            db.Query(setThreshold, {" +7 "});
+            Require(rules.LoadActiveRules().threshold == 7, "decimal threshold with whitespace");
+            db.Query(setThreshold, {"7 points"});
+            bool badSettingRejected = false;
+            try {
+                rules.LoadActiveRules();
+            } catch (const DbError &) {
+                badSettingRejected = true;
+            }
+            Require(badSettingRejected, "reject partially numeric stored threshold");
+            db.Query(setThreshold, old);
+        });
         auto detector = rules.Detector();
         const std::string markerValue = "fixture) and ? + (select case when (2 < 3) then 4 else 8 end)";
         auto nested = detector.Analyze(markerValue);
@@ -152,6 +200,7 @@ bool CheckDatabase() {
         auto details = scans.ScanHits(nestedId);
         Require(details.size() == 1 && details[0][2] == nested.hits[0].pattern && details[0][3] == "4",
                 "historical snapshot stores structural reason");
+        Require(scans.ScanLines(nestedId) == Rows{{"1", "4", "1"}}, "archived high-risk hit below threshold");
         scans.DeleteScan(nestedId);
         auto unique = std::to_string(GetCurrentProcessId()) + "-" + std::to_string(GetTickCount64());
         auto pattern = "sqlscan-test-" + unique;
@@ -163,7 +212,22 @@ bool CheckDatabase() {
         int ruleId = test.hits.at(0).ruleId;
         auto id = scans.Save(test, "file", unique, io::Hash(pattern), pattern.size());
         Require(scans.Previous(io::Hash(pattern)) == id, "file deduplication");
+        const auto renamed = pattern + "-new";
+        rules.EditRule(ruleId, std::stoi(cats.at(0)[0]), renamed, 3, false, true);
+        const auto input = renamed + "\nclean\n" + renamed + " " + renamed;
+        const auto multiline = rules.Detector().Analyze(input);
+        const auto multilineId = scans.Save(multiline, "manual", unique, io::Hash(input), input.size());
+        const Rows expectedLines = {{"1", "3", "0"}, {"2", "0", "0"}, {"3", "6", "1"}};
+        Require(scans.ScanLines(multilineId) == expectedLines &&
+                scans.ScanLines(multilineId, 1) == Rows{expectedLines.front()}, "archived line scores and preview");
+        const auto top = scans.TopRules();
+        Require(std::find(top.begin(), top.end(), Row{renamed, "4"}) != top.end(),
+                "statistics combines matches before and after a rule rename");
         rules.EditRule(ruleId, std::stoi(cats.at(0)[0]), pattern, 4, true, false);
+        Require(scans.ScanLines(multilineId) == expectedLines, "archived lines retain applied rule settings");
+        db.Query(L"UPDATE sqlscan.scan SET hit_count=4 WHERE id=?::bigint", {multilineId});
+        Require(scans.ScanLines(multilineId).empty(), "do not invent line scores for a partial archive");
+        scans.DeleteScan(multilineId);
         Require(rules.Detector().Analyze(pattern).hits.empty(), "disabled rule");
         Require(scans.ScanHits(id).at(0)[3] == "3", "saved weight");
         bool rejected = false;
@@ -191,6 +255,25 @@ bool CheckDatabase() {
         }
         filtered.minScore = "4";
         Require(scans.History(filtered, 0).empty() && scans.History(f, 1).empty(), "minimum score and offset");
+        HistoryFilter byRisk;
+        byRisk.text = unique + "-severity";
+        byRisk.sortColumn = 6;
+        db.Query(L"INSERT INTO sqlscan.scan(source_type, source_name, input_sha256, input_bytes, total_score, "
+                 L"suspicious, threshold_used, truncated, risk) SELECT 'manual', ?, decode(repeat('00',32),'hex'), "
+                 L"0, 0, false, 5, false, risk FROM (VALUES (NULL),('Критический'),('Низкий'),('Высокий'),"
+                 L"('Средний')) AS fixture(risk)", {byRisk.text});
+        byRisk.ascending = true;
+        const auto asc = scans.History(byRisk, 0);
+        byRisk.ascending = false;
+        const auto desc = scans.History(byRisk, 0);
+        const Row severity{"Низкий", "Средний", "Высокий", "Критический"};
+        Require(asc.size() == 5 && desc.size() == 5 && asc.back()[6].empty() && desc.back()[6].empty(),
+                "unknown historical risk follows known levels");
+        for (std::size_t i = 0; i < severity.size(); ++i)
+            Require(asc[i][6] == severity[i] && desc[i][6] == severity[severity.size() - i - 1],
+                    "journal sorts by severity");
+        Require(scans.ScanLines(asc.back()[0]).empty(), "unknown legacy line count stays unavailable");
+        db.Query(L"DELETE FROM sqlscan.scan WHERE source_name=?", {byRisk.text});
         test.hits.at(0).ruleId = -1;
         rejected = false;
         try {

@@ -4,6 +4,8 @@
 #include "resource.h"
 #include <algorithm>
 #include <array>
+#include <charconv>
+#include <limits>
 #include <stdexcept>
 #include <wincrypt.h>
 #pragma comment(lib, "odbc32.lib")
@@ -42,6 +44,22 @@ std::wstring ResourceSql(int id) {
     return io::Wide({bytes, SizeofResource(module, res)});
 }
 std::string Flag(bool v) { return v ? "true" : "false"; }
+int PositiveSetting(const Row &setting, int maximum) {
+    std::string_view text = setting[1];
+    constexpr auto whitespace = " \t\r\n\v\f";
+    const auto first = text.find_first_not_of(whitespace);
+    if (first != text.npos) {
+        text = text.substr(first, text.find_last_not_of(whitespace) - first + 1);
+        if (text.front() == '+')
+            text.remove_prefix(1);
+        int value{};
+        const auto end = text.data() + text.size();
+        const auto [ptr, error] = std::from_chars(text.data(), end, value);
+        if (ptr == end && error == std::errc{} && value > 0 && value <= maximum)
+            return value;
+    }
+    throw DbError("Недопустимое значение настройки " + setting[0]);
+}
 constexpr wchar_t kSettings[] = L"Software\\SqlScanCoursework\\SqlScan2";
 } // namespace
 DbConnection::~DbConnection() { Close(); }
@@ -75,8 +93,10 @@ void DbConnection::Open(const std::wstring &connection) {
                                     nullptr, SQL_DRIVER_NOPROMPT);
         Check(rc, SQL_HANDLE_DBC, dbc_);
         loggedIn_ = true;
-        for (int id : {IDR_SCHEMA, IDR_UPGRADE})
-            Query(ResourceSql(id));
+        Transaction([&] {
+            Query(ResourceSql(IDR_SCHEMA));
+            Query(ResourceSql(IDR_UPGRADE));
+        });
     } catch (...) {
         Close();
         throw;
@@ -158,25 +178,20 @@ Rows RuleRepository::Categories() {
 }
 SqlInjectionDetector RuleRepository::Detector() { return SqlInjectionDetector(LoadActiveRules()); }
 DetectorSettings RuleRepository::LoadActiveRules() {
-    std::vector<PatternRule> rules;
+    DetectorSettings result;
     for (const auto &a : Rules())
         if (a[4] == "1")
-            rules.push_back({a[1], std::stoi(a[2]), a[3] == "1", std::stoi(a[0]), a[5]});
-    std::size_t fileLimit = 2 * 1024 * 1024;
-    auto settings = db_.Query(L"SELECT key,value FROM sqlscan.setting");
-    int threshold = kSuspiciousScoreThreshold;
-    std::size_t limit = kMaxAnalyzeInputBytes;
-    for (const auto &a : settings) {
+            result.rules.push_back({a[1], std::stoi(a[2]), a[3] == "1", std::stoi(a[0]), a[5]});
+    constexpr int maximumBytes = 2 * 1024 * 1024;
+    for (const auto &a : db_.Query(L"SELECT key,value FROM sqlscan.setting")) {
         if (a[0] == "suspicious_score_threshold")
-            threshold = std::stoi(a[1]);
-        if (a[0] == "max_analyze_input_bytes")
-            limit = std::stoull(a[1]);
-        if (a[0] == "max_file_load_bytes")
-            fileLimit = std::stoull(a[1]);
+            result.threshold = PositiveSetting(a, (std::numeric_limits<int>::max)());
+        else if (a[0] == "max_analyze_input_bytes")
+            result.maxBytes = PositiveSetting(a, maximumBytes);
+        else if (a[0] == "max_file_load_bytes")
+            result.maxFileBytes = PositiveSetting(a, maximumBytes);
     }
-    if (!fileLimit || fileLimit > 2 * 1024 * 1024)
-        throw std::runtime_error("Недопустимый лимит файла");
-    return {std::move(rules), threshold, limit, fileLimit};
+    return result;
 }
 void RuleRepository::EditRule(int id, int category, std::string pattern, int weight, bool high,
                               bool enabled) {
@@ -258,7 +273,8 @@ std::string ScanRepository::Save(const DetectionReport &r, std::string type, std
 Rows ScanRepository::History(const HistoryFilter &f, int offset, int limit) {
     static const std::array<const wchar_t *, 7> order = {L"s.id",          L"s.started_at", L"s.source_type",
                                                          L"s.source_name", L"s.suspicious", L"s.total_score",
-                                                         L"s.risk"};
+                                                         L"CASE s.risk WHEN 'Низкий' THEN 1 WHEN 'Средний' THEN 2 "
+                                                         L"WHEN 'Высокий' THEN 3 WHEN 'Критический' THEN 4 END"};
     std::wstring sql =
         L"SELECT s.id,to_char(s.started_at,'YYYY-MM-DD HH24:MI:SS'),s.source_type,s.source_name,CASE WHEN "
         L"s.suspicious THEN 'Да' ELSE 'Нет' END,s.total_score,s.risk FROM sqlscan.scan s WHERE true";
@@ -278,7 +294,7 @@ Rows ScanRepository::History(const HistoryFilter &f, int offset, int limit) {
     sql += L" ORDER BY ";
     sql += order.at(f.sortColumn);
     sql += f.ascending ? L" ASC" : L" DESC";
-    sql += L",s.id DESC LIMIT ?::int OFFSET ?::int";
+    sql += L" NULLS LAST,s.id DESC LIMIT ?::int OFFSET ?::int";
     args.push_back(std::to_string(limit));
     args.push_back(std::to_string(offset));
     return db_.Query(sql, args);
@@ -291,6 +307,25 @@ Rows ScanRepository::ScanSummary(std::string id) {
         L"(SELECT count(*) FROM sqlscan.hit h WHERE h.scan_id=s.id) FROM "
         L"sqlscan.scan s WHERE id=?::bigint",
         {id});
+}
+Rows ScanRepository::ScanLines(std::string id, int limit) {
+    return db_.Query(LR"sql(
+        WITH target AS (
+            SELECT id, threshold_used, least(line_count, nullif(?::int, -1)) AS lines
+            FROM sqlscan.scan s
+            WHERE id = ?::bigint AND line_count IS NOT NULL AND
+                hit_count = (SELECT count(*) FROM sqlscan.hit WHERE scan_id = s.id)
+        ), scores AS (
+            SELECT h.line_no, least(sum(h.weight_applied), 2147483647) AS score,
+                   bool_or(h.high_risk_applied) AS high
+            FROM target t JOIN sqlscan.hit h ON h.scan_id = t.id
+            WHERE h.line_no <= t.lines GROUP BY h.line_no
+        )
+        SELECT n, coalesce(score, 0),
+               (coalesce(high, false) OR coalesce(score, 0) >= threshold_used)::int
+        FROM target CROSS JOIN LATERAL generate_series(1, lines) AS line(n)
+        LEFT JOIN scores ON line_no = n ORDER BY n
+    )sql", {std::to_string(limit), id});
 }
 Rows ScanRepository::ScanHits(std::string id, int limit) {
     return db_.Query(
@@ -307,8 +342,8 @@ Rows ScanRepository::Days() {
                      L"GROUP BY 1 ORDER BY 1 DESC LIMIT 30");
 }
 Rows ScanRepository::TopRules() {
-    return db_.Query(
-        L"SELECT pattern_applied,count(*) FROM sqlscan.hit GROUP BY 1 ORDER BY 2 DESC,1 LIMIT 10");
+    return db_.Query(L"SELECT r.pattern, count(*) FROM sqlscan.hit h JOIN sqlscan.rule r ON r.id=h.rule_id "
+                     L"GROUP BY r.id ORDER BY count(*) DESC, r.pattern LIMIT 10");
 }
 Rows ScanRepository::Totals() {
     return db_.Query(L"SELECT count(*),count(*) FILTER(WHERE suspicious) FROM sqlscan.scan");

@@ -76,6 +76,7 @@ struct DetectionReport {
     // Only dense reports need a rule snapshot to enumerate details beyond the preview.
     std::vector<PatternRule> replayRules;
     bool replayLegacy = false;
+    std::size_t replayScalarThroughLine = 0;
     void ForEachHit(const std::function<void(const DetectionHit &)> &visit) const;
 };
 
@@ -86,10 +87,13 @@ class SqlInjectionDetector {
     SqlInjectionDetector(std::vector<PatternRule> rules, int threshold, std::size_t maxBytes);
     std::size_t FileLimit() const { return maxFileBytes_; }
     DetectionReport Analyze(std::string_view input, bool legacy = false) const;
+    DetectionReport AnalyzeLog(std::string_view input) const;
     const std::vector<PatternRule> &Rules() const { return rules_; }
     int Threshold() const { return threshold_; }
 
   private:
+    enum class InputMode { Sample, Log, Legacy };
+    DetectionReport AnalyzeInput(std::string_view input, InputMode mode) const;
     std::vector<PatternRule> rules_;
     int threshold_ = kSuspiciousScoreThreshold;
     std::size_t maxBytes_ = kMaxAnalyzeInputBytes;

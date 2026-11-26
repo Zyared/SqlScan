@@ -10,13 +10,48 @@
 #include <sstream>
 
 namespace {
-using namespace std::string_literals;
+constexpr std::size_t maxEditUnits = 256 * 1024;
+
+// The classic multiline edit control needs CRLF, even when the original file uses LF or CR.
+std::wstring FilePreview(const std::wstring &input, bool &limited) {
+    std::wstring preview;
+    preview.reserve((std::min)(input.size(), maxEditUnits));
+    std::size_t i = 0;
+    while (i < input.size() && preview.size() < maxEditUnits) {
+        const wchar_t c = input[i];
+        if (c == L'\r' || c == L'\n') {
+            if (preview.size() + 2 > maxEditUnits)
+                break;
+            preview += L"\r\n";
+            if (c == L'\r' && i + 1 < input.size() && input[i + 1] == L'\n')
+                ++i;
+        } else {
+            if (c >= 0xd800 && c <= 0xdbff && preview.size() + 2 > maxEditUnits)
+                break;
+            preview += c;
+        }
+        ++i;
+    }
+    limited = i < input.size();
+    return preview;
+}
 std::string Field(CWnd &w, int id) {
     CString s;
     w.GetDlgItemText(id, s);
     return io::Utf8(s.GetString());
 }
 void Set(CWnd &w, int id, const std::string &s) { w.SetDlgItemText(id, io::Wide(s).c_str()); }
+COLORREF ScoreColor(int score) {
+    // Preserve the coursework scale: green at zero, gold at 50, red from 100 onward.
+    const int value = std::clamp(score, 0, 100);
+    const auto green = RGB(32, 112, 45), gold = RGB(145, 111, 0), red = RGB(173, 44, 39);
+    const auto from = value < 50 ? green : gold;
+    const auto to = value < 50 ? gold : red;
+    const int step = value < 50 ? value : value - 50;
+    auto blend = [step](int a, int b) { return a + (b - a) * step / 50; };
+    return RGB(blend(GetRValue(from), GetRValue(to)), blend(GetGValue(from), GetGValue(to)),
+               blend(GetBValue(from), GetBValue(to)));
+}
 void Error(const std::exception &e) { AfxMessageBox(io::Wide(e.what()).c_str(), MB_ICONWARNING); }
 std::string Yes(bool value) { return value ? "Да" : "Нет"; }
 class Form : public CDialogEx {
@@ -61,7 +96,8 @@ void Choice(Form &f, int id, const std::vector<std::wstring> &labels, int index)
         cb.AddString(s.c_str());
     cb.SetCurSel(index);
 }
-void Export(CWnd *parent, const wchar_t *basename, const std::function<std::string(std::string)> &render) {
+void Export(CWnd *parent, const wchar_t *basename,
+            const std::function<void(std::ostream &, const std::string &)> &render) {
     CFileDialog dlg(FALSE, L"txt", basename, OFN_OVERWRITEPROMPT | OFN_PATHMUSTEXIST,
                     L"Текст (*.txt)|*.txt|CSV (*.csv)|*.csv|HTML (*.html)|*.html||", parent);
     if (dlg.DoModal() != IDOK)
@@ -70,16 +106,16 @@ void Export(CWnd *parent, const wchar_t *basename, const std::function<std::stri
     auto ext = path.extension().wstring();
     std::transform(ext.begin(), ext.end(), ext.begin(), ::towlower);
     std::string format = ext == L".html" || ext == L".htm" ? "html" : ext == L".csv" ? "csv" : "txt";
-    io::Write(path, "\xef\xbb\xbf" + render(format));
+    io::Write(path, [&](std::ostream &out) {
+        out << "\xef\xbb\xbf";
+        render(out, format);
+    });
 }
-std::string Grid(const Row &headers, const Rows &rows, const std::string &format,
-                 std::size_t riskColumn = SIZE_MAX, bool highFlag = false) {
-    std::ostringstream out;
+void Grid(std::ostream &out, const Row &headers, const Rows &rows, const std::string &format,
+          std::size_t riskColumn = SIZE_MAX, bool highFlag = false) {
     bool html = format == "html", csv = format == "csv";
     if (html)
-        out << "<!doctype html><html lang=\"ru\"><meta charset=\"utf-8\"><title>Журнал "
-               "SqlScan</title><style>body{font:16px "
-               "system-ui}td,th{padding:.4em;text-align:left;border-bottom:1px solid #ccc}.elevated{background:#ffe2cf}.critical{background:#ffc9c7;font-weight:bold}</style><table>";
+        out << "<table>";
     auto line = [&](const Row &r, bool head) {
         if (html) {
             const char *style = "";
@@ -87,7 +123,7 @@ std::string Grid(const Row &headers, const Rows &rows, const std::string &format
                 const auto &risk = r[riskColumn];
                 if (risk == "Критический")
                     style = " class=\"critical\"";
-                else if (risk == "Высокий" || risk == "Средний" || (highFlag && risk == "1"))
+                else if (risk == "Высокий" || risk == "Средний" || risk == "Подозрительно" || (highFlag && risk == "1"))
                     style = " class=\"elevated\"";
             }
             out << "<tr" << style << '>';
@@ -107,20 +143,38 @@ std::string Grid(const Row &headers, const Rows &rows, const std::string &format
     for (const auto &r : rows)
         line(r, false);
     if (html)
-        out << "</table></html>";
-    return out.str();
+        out << "</table>";
 }
-std::string StoredReport(const Row &s, const Rows &hits, const std::string &format) {
-    const Row head = {"ID",         "Время",         "Источник",       "Имя",    "Баллы",
-                      "Порог",      "Подозрительно", "Риск",           "Строк",  "Совпадений",
-                      "Байт входа", "Байт анализа",  "Вход ограничен", "SHA-256"};
-    const Row cols = {"Строка", "Позиция", "Шаблон", "Вес", "Высокий риск", "Контекст", "Категория"};
-    if (format != "html")
-        return Grid(head, {s}, format) + "\r\n" + Grid(cols, hits, format);
-    std::string first = Grid(head, {s}, format, 7), second = Grid(cols, hits, format, 4, true);
-    first.erase(first.find("</html>"));
-    second.erase(0, second.find("<table>"));
-    return first + "<h2>Совпадения</h2>" + second;
+constexpr char archiveHtml[] =
+    "<!doctype html><html lang=\"ru\"><meta charset=\"utf-8\"><title>Журнал SqlScan</title>"
+    "<style>body{font:16px system-ui}td,th{padding:.4em;text-align:left;border-bottom:1px solid #ccc}"
+    ".elevated{background:#ffe2cf}.critical{background:#ffc9c7;font-weight:bold}</style><body>";
+constexpr char archiveEnd[] = "</body></html>";
+bool HasLineScores(const Row &summary) {
+    return !summary[8].empty() && !summary[9].empty() && summary[9] == summary[14];
+}
+constexpr char missingLineScores[] = "В этом архиве недостаточно данных для построчных оценок.";
+std::string LineVerdict(const std::string &flag) { return flag == "1" ? "Подозрительно" : "Чисто"; }
+void StoredReport(std::ostream &out, const Row &summary, const Rows &hits, Rows lines, const std::string &format) {
+    const Row head = {"ID", "Время", "Источник", "Имя", "Баллы", "Порог", "Подозрительно", "Риск", "Строк",
+                      "Совпадений", "Байт входа", "Байт анализа", "Вход ограничен", "SHA-256", "Сохранено совпадений"};
+    const Row hitHead = {"Строка", "Позиция", "Шаблон", "Вес", "Высокий риск", "Контекст", "Категория"};
+    const bool html = format == "html";
+    if (html)
+        out << archiveHtml;
+    Grid(out, head, {summary}, format, 7);
+    out << (html ? "<h2>Построчные оценки</h2>" : "\r\n");
+    if (HasLineScores(summary)) {
+        for (auto &row : lines)
+            row[2] = LineVerdict(row[2]);
+        Grid(out, {"Строка", "Баллы", "Вердикт"}, lines, format, 2);
+    } else {
+        out << (html ? "<p>" : "") << missingLineScores << (html ? "</p>" : "\r\n");
+    }
+    out << (html ? "<h2>Совпадения</h2>" : "\r\n");
+    Grid(out, hitHead, hits, format, 4, true);
+    if (html)
+        out << archiveEnd;
 }
 const Row historyHead = {"ID", "Время", "Источник", "Имя", "Подозрительно", "Баллы", "Риск"};
 } // namespace
@@ -136,22 +190,22 @@ void ActivityChart::OnPaint() {
     dc.TextOutW(10, 5, L"Проверки по дням · синие — все, красные — подозрительные");
     if (days.empty())
         return;
-    int maxValue = 1;
-    for (auto &d : days)
-        maxValue = (std::max)(maxValue, std::stoi(d[1]));
+    long long maxValue = 1;
+    for (const auto &day : days)
+        maxValue = (std::max)(maxValue, day.total);
     int slot = (std::max)(1, (r.Width() - 24) / static_cast<int>(days.size()));
     int height = (std::max)(5, r.Height() - 58);
     int x = 12;
     for (auto iter = days.rbegin(); iter != days.rend(); ++iter, x += slot) {
         int width = (std::max)(2, (std::min)(slot - 2, 45));
-        auto bar = [&](int n, int dx, COLORREF c) {
-            int h = static_cast<int>(1LL * height * n / maxValue);
+        auto bar = [&](long long n, int dx, COLORREF c) {
+            int h = static_cast<int>(static_cast<double>(n) / maxValue * height);
             dc.FillSolidRect(x + dx, 30 + height - h, (std::max)(1, width / 2), h, c);
         };
-        bar(std::stoi((*iter)[1]), 0, RGB(49, 107, 157));
-        bar(std::stoi((*iter)[2]), width / 2, RGB(177, 72, 65));
+        bar(iter->total, 0, RGB(49, 107, 157));
+        bar(iter->suspicious, width / 2, RGB(177, 72, 65));
         if (slot >= 48)
-            dc.TextOutW(x, 32 + height, io::Wide((*iter)[0].substr(5)).c_str());
+            dc.TextOutW(x, 32 + height, iter->label.c_str());
     }
 }
 CSqlScanDlg::CSqlScanDlg(CWnd *parent) : CDialogEx(IDD_SQLSCAN_DIALOG, parent) {}
@@ -171,6 +225,7 @@ ON_NOTIFY(LVN_COLUMNCLICK, IDC_TABLE, &CSqlScanDlg::OnSort)
 ON_CONTROL_RANGE(BN_CLICKED, IDC_ACTION1, IDC_PAGE_NEXT, &CSqlScanDlg::OnAction)
 ON_BN_CLICKED(IDC_BTN_CHECK, &CSqlScanDlg::OnScan)
 ON_BN_CLICKED(IDC_BTN_LOAD, &CSqlScanDlg::OnLoad)
+ON_BN_CLICKED(IDC_NEW_INPUT, &CSqlScanDlg::OnNewInput)
 ON_BN_CLICKED(IDC_BTN_SAVE, &CSqlScanDlg::OnExport)
 ON_EN_CHANGE(IDC_EDIT_INPUT, &CSqlScanDlg::OnChanged)
 ON_COMMAND(ID_CONNECT, &CSqlScanDlg::OnConnect)
@@ -185,7 +240,7 @@ BOOL CSqlScanDlg::OnInitDialog() {
     tabs_.SetCurSel(0);
     table_.SetExtendedStyle(LVS_EX_FULLROWSELECT | LVS_EX_DOUBLEBUFFER | LVS_EX_LABELTIP);
     output_.LimitText(512 * 1024);
-    GetDlgItem(IDC_EDIT_INPUT)->SendMessage(EM_SETLIMITTEXT, 256 * 1024);
+    GetDlgItem(IDC_EDIT_INPUT)->SendMessage(EM_SETLIMITTEXT, maxEditUnits);
     ready_ = true;
     try {
         wchar_t *env = nullptr;
@@ -224,8 +279,8 @@ void CSqlScanDlg::OnOffline() {
     try {
         SaveConnection(L"");
         connection_.clear();
-        db_.Close();
-        detector_ = SqlInjectionDetector();
+        UseBuiltinRules();
+        page_ = 0;
         notice_ = "Проверки доступны со встроенным набором";
         Refresh();
     } catch (const std::exception &e) {
@@ -264,6 +319,7 @@ void CSqlScanDlg::OnConnect() {
                 (L"Подключение успешно. Активных правил: " + std::to_wstring(det.Rules().size())).c_str());
         });
     if (form.DoModal() == IDOK) {
+        page_ = 0;
         notice_.clear();
         Refresh();
     }
@@ -294,11 +350,15 @@ void CSqlScanDlg::Layout() {
     move(IDC_TABS, true, m, 6, w - 2 * m, 31);
     move(IDC_STATUS, true, m, h - 27, w - 2 * m, 23);
     int inputH = (std::max)(70, (h - 190) * 42 / 100), buttonsY = 65 + inputH;
+    SetDlgItemText(IDC_STATIC_IN, previewOnly_
+        ? L"Файл · показано начало только для чтения. Анализ использует загруженный файл с учётом лимита."
+        : L"Текст для проверки");
     move(IDC_STATIC_IN, t == 0, m, 42, w - 2 * m, 20);
     move(IDC_EDIT_INPUT, t == 0, m, 62, w - 2 * m, inputH);
     move(IDC_BTN_CHECK, t == 0, m, buttonsY, 112, 30);
     move(IDC_BTN_LOAD, t == 0, m + 120, buttonsY, 150, 30);
     move(IDC_BTN_SAVE, t == 0, m + 278, buttonsY, 160, 30);
+    move(IDC_NEW_INPUT, t == 0 && previewOnly_, m + 446, buttonsY, 130, 30);
     move(IDC_STATIC_OUT, t == 0, m, buttonsY + 38, w - 2 * m, 20);
     move(IDC_EDIT_OUTPUT, t == 0, m, buttonsY + 59, w - 2 * m, h - buttonsY - 95);
     for (int i = 0; i < 4; ++i)
@@ -326,74 +386,99 @@ void CSqlScanDlg::SetRows(const Rows &data, const std::vector<std::pair<std::wst
     table_.SetRedraw(TRUE);
     table_.Invalidate();
 }
+void CSqlScanDlg::UseBuiltinRules() {
+    db_.Close();
+    detector_ = SqlInjectionDetector();
+}
+void CSqlScanDlg::LoadTab(int t) {
+    rows_.clear();
+    chart_.days.clear();
+    more_ = false;
+    if (t == 1) {
+        for (auto [id, s] :
+             std::initializer_list<std::pair<int, const wchar_t *>>{{IDC_ACTION1, L"Фильтры…"},
+                                                                    {IDC_ACTION2, L"Открыть"},
+                                                                    {IDC_ACTION3, L"Удалить"},
+                                                                    {IDC_ACTION4, L"Экспорт выборки…"}})
+            SetDlgItemText(id, s);
+        if (db_.Connected()) {
+            rows_ = scans_.History(filter_, page_ * 50, 51);
+            more_ = rows_.size() > 50;
+            if (more_)
+                rows_.pop_back();
+        }
+        SetRows(rows_, {{L"ID", 55},
+                        {L"Время", 155},
+                        {L"Источник", 85},
+                        {L"Имя", 180},
+                        {L"Подозрительно", 110},
+                        {L"Баллы", 65},
+                        {L"Риск", 95}});
+        Set(*this, IDC_PAGE_LABEL,
+            "Страница " + std::to_string(page_ + 1) + " · Записей: " + std::to_string(rows_.size()));
+    } else if (t == 2) {
+        for (auto [id, s] :
+             std::initializer_list<std::pair<int, const wchar_t *>>{{IDC_ACTION1, L"Добавить…"},
+                                                                    {IDC_ACTION2, L"Изменить…"},
+                                                                    {IDC_ACTION3, L"Вкл. / выкл."},
+                                                                    {IDC_ACTION4, L"Удалить"}})
+            SetDlgItemText(id, s);
+        if (db_.Connected())
+            rows_ = rules_.Rules();
+        else
+            for (const auto &rule : detector_.Rules())
+                rows_.push_back({"—", rule.pattern, std::to_string(rule.weight),
+                                 rule.highRisk ? "1" : "0", "1", rule.category});
+        auto display = rows_;
+        for (auto &a : display) {
+            a[3] = Yes(a[3] == "1");
+            a[4] = Yes(a[4] == "1");
+        }
+        SetRows(display, {{L"ID", 55},
+                          {L"Шаблон", 210},
+                          {L"Вес", 55},
+                          {L"Высокий риск", 110},
+                          {L"Включена", 88},
+                          {L"Категория", 155}});
+    } else if (t == 3) {
+        if (db_.Connected()) {
+            rows_ = scans_.TopRules();
+            for (const auto &day : scans_.Days())
+                chart_.days.push_back({io::Wide(day[0].substr(5)), std::stoll(day[1]), std::stoll(day[2])});
+            auto counts = scans_.Totals().at(0);
+            auto total = std::stoll(counts[0]), positive = std::stoll(counts[1]);
+            std::ostringstream percent;
+            percent << std::fixed << std::setprecision(2) << (total ? 100.0 * positive / total : 0.0);
+            notice_ = "Проверок: " + counts[0] + " · Подозрительных: " + counts[1] + " (" +
+                      percent.str() + "%)";
+        }
+        SetRows(rows_, {{L"Топ сигнатур", 280}, {L"Совпадения", 140}});
+        chart_.Invalidate();
+    }
+}
 void CSqlScanDlg::Refresh() {
     if (!ready_)
         return;
     Layout();
-    int t = Tab();
-    rows_.clear();
-    chart_.days.clear();
-    more_ = false;
+    const int t = Tab();
     try {
-        if (t == 1) {
-            for (auto [id, s] :
-                 std::initializer_list<std::pair<int, const wchar_t *>>{{IDC_ACTION1, L"Фильтры…"},
-                                                                        {IDC_ACTION2, L"Открыть"},
-                                                                        {IDC_ACTION3, L"Удалить"},
-                                                                        {IDC_ACTION4, L"Экспорт выборки…"}})
-                SetDlgItemText(id, s);
-            if (db_.Connected()) {
-                rows_ = scans_.History(filter_, page_ * 50, 51);
-                more_ = rows_.size() > 50;
-                if (more_)
-                    rows_.pop_back();
-            }
-            SetRows(rows_, {{L"ID", 55},
-                            {L"Время", 155},
-                            {L"Источник", 85},
-                            {L"Имя", 180},
-                            {L"Подозрительно", 110},
-                            {L"Баллы", 65},
-                            {L"Риск", 95}});
-            Set(*this, IDC_PAGE_LABEL,
-                "Страница " + std::to_string(page_ + 1) + " · Записей: " + std::to_string(rows_.size()));
-        } else if (t == 2) {
-            for (auto [id, s] :
-                 std::initializer_list<std::pair<int, const wchar_t *>>{{IDC_ACTION1, L"Добавить…"},
-                                                                        {IDC_ACTION2, L"Изменить…"},
-                                                                        {IDC_ACTION3, L"Вкл. / выкл."},
-                                                                        {IDC_ACTION4, L"Удалить"}})
-                SetDlgItemText(id, s);
-            if (db_.Connected())
-                rows_ = rules_.Rules();
-            else
-                for (const auto &rule : detector_.Rules())
-                    rows_.push_back({"—", rule.pattern, std::to_string(rule.weight),
-                                     rule.highRisk ? "1" : "0", "1", rule.category});
-            auto display = rows_;
-            for (auto &a : display) {
-                a[3] = Yes(a[3] == "1");
-                a[4] = Yes(a[4] == "1");
-            }
-            SetRows(display, {{L"ID", 55},
-                              {L"Шаблон", 210},
-                              {L"Вес", 55},
-                              {L"Высокий риск", 110},
-                              {L"Включена", 88},
-                              {L"Категория", 155}});
-        } else if (t == 3) {
-            if (db_.Connected()) {
-                rows_ = scans_.TopRules();
-                chart_.days = scans_.Days();
-                auto counts = scans_.Totals().at(0);
-                auto total = std::stoll(counts[0]), positive = std::stoll(counts[1]);
-                std::ostringstream percent;
-                percent << std::fixed << std::setprecision(2) << (total ? 100.0 * positive / total : 0.0);
-                notice_ = "Проверок: " + counts[0] + " · Подозрительных: " + counts[1] + " (" +
-                          percent.str() + "%)";
-            }
-            SetRows(rows_, {{L"Топ сигнатур", 280}, {L"Совпадения", 140}});
-            chart_.Invalidate();
+        if (t && !connection_.empty() && !db_.Connected())
+            Connect();
+        LoadTab(t);
+    } catch (const DbError &e) {
+        notice_ = e.what();
+        // Only read-only views may be retried. A save may already have reached the database.
+        try {
+            if (!db_.Connected())
+                throw;
+            Connect();
+            notice_.clear();
+            LoadTab(t);
+        } catch (const std::exception &retry) {
+            UseBuiltinRules();
+            page_ = 0;
+            LoadTab(t);
+            notice_ = "БД недоступна · " + std::string(retry.what());
         }
     } catch (const std::exception &e) {
         notice_ = e.what();
@@ -401,7 +486,7 @@ void CSqlScanDlg::Refresh() {
     }
     for (int id = IDC_ACTION1; id <= IDC_ACTION4; ++id)
         GetDlgItem(id)->EnableWindow(db_.Connected());
-    GetDlgItem(IDC_PAGE_PREV)->EnableWindow(page_ > 0);
+    GetDlgItem(IDC_PAGE_PREV)->EnableWindow(db_.Connected() && page_ > 0);
     GetDlgItem(IDC_PAGE_NEXT)->EnableWindow(more_);
     if (t && !db_.Connected() && notice_.empty())
         notice_ = "Подключение: Приложение → Настройки базы данных";
@@ -428,15 +513,29 @@ void CSqlScanDlg::OnTableOpen(NMHDR *, LRESULT *result) {
         OnAction(IDC_ACTION2);
     *result = 0;
 }
+void CSqlScanDlg::ResetReport() {
+    report_.reset();
+    output_.SetWindowText(L"");
+    GetDlgItem(IDC_BTN_SAVE)->EnableWindow(FALSE);
+}
+void CSqlScanDlg::OnNewInput() {
+    auto input = GetDlgItem(IDC_EDIT_INPUT);
+    loading_ = true;
+    input->SendMessage(EM_SETREADONLY, FALSE);
+    input->SetWindowText(L"");
+    loading_ = false;
+    previewOnly_ = false;
+    OnChanged();
+    Layout();
+    input->SetFocus();
+}
 void CSqlScanDlg::OnChanged() {
     if (!ready_ || loading_)
         return;
     filename_.clear();
     fileRaw_.clear();
     fileText_.clear();
-    report_.reset();
-    output_.SetWindowText(L"");
-    GetDlgItem(IDC_BTN_SAVE)->EnableWindow(FALSE);
+    ResetReport();
     notice_.clear();
     Status();
 }
@@ -448,18 +547,18 @@ void CSqlScanDlg::OnLoad() {
     try {
         auto raw = io::Read(dlg.GetPathName().GetString(), detector_.FileLimit());
         auto decoded = io::DecodeFile(raw);
-        auto view = io::Wide(decoded);
+        bool limited;
+        auto view = FilePreview(io::Wide(decoded), limited);
         filename_ = io::Utf8(dlg.GetFileName().GetString());
         fileRaw_ = std::move(raw);
         fileText_ = std::move(decoded);
-        if (view.size() > 256 * 1024)
-            view.resize(256 * 1024);
+        previewOnly_ = limited;
         loading_ = true;
+        GetDlgItem(IDC_EDIT_INPUT)->SendMessage(EM_SETREADONLY, previewOnly_);
         SetDlgItemText(IDC_EDIT_INPUT, view.c_str());
         loading_ = false;
-        report_.reset();
-        output_.SetWindowText(L"");
-        GetDlgItem(IDC_BTN_SAVE)->EnableWindow(FALSE);
+        ResetReport();
+        Layout();
         notice_ = "Файл: " + filename_ + " · " + std::to_string(fileRaw_.size()) + " байт";
         Status();
     } catch (const std::exception &e) {
@@ -495,8 +594,7 @@ void CSqlScanDlg::RenderResult() {
     if (scoreLabel != std::wstring::npos) {
         const auto begin = scoreLabel + 7;
         const auto length = std::to_wstring(report_->totalScore).size();
-        const double weight = (std::min)(1.0, report_->totalScore / (2.0 * report_->threshold));
-        fmt.crTextColor = RGB(static_cast<int>(32 + 130 * weight), static_cast<int>(112 - 72 * weight), 45);
+        fmt.crTextColor = ScoreColor(report_->totalScore);
         output_.SetSel(static_cast<long>(begin), static_cast<long>(begin + length));
         output_.SendMessage(EM_SETCHARFORMAT, SCF_SELECTION, reinterpret_cast<LPARAM>(&fmt));
     }
@@ -518,22 +616,23 @@ void CSqlScanDlg::RenderResult() {
 }
 void CSqlScanDlg::OnScan() {
     try {
-        std::string input = filename_.empty() ? Field(*this, IDC_EDIT_INPUT) : fileText_;
+        const std::string manual = filename_.empty() ? Field(*this, IDC_EDIT_INPUT) : std::string{};
+        const auto &input = filename_.empty() ? manual : fileText_;
         notice_.clear();
         if (!connection_.empty()) {
             try {
-                if (db_.Connected())
-                    detector_ = rules_.Detector();
-                else
+                if (db_.Connected()) {
+                    try {
+                        detector_ = rules_.Detector();
+                    } catch (const DbError &) {
+                        Connect();
+                    }
+                } else {
                     Connect();
-            } catch (const std::exception &) {
-                try {
-                    Connect();
-                } catch (const std::exception &e) {
-                    db_.Close();
-                    detector_ = SqlInjectionDetector();
-                    notice_ = "Автономно · " + std::string(e.what());
                 }
+            } catch (const std::exception &e) {
+                UseBuiltinRules();
+                notice_ = "БД недоступна · " + std::string(e.what());
             }
         }
         auto &raw = filename_.empty() ? input : fileRaw_;
@@ -550,7 +649,7 @@ void CSqlScanDlg::OnScan() {
                 notice_ = e.what();
             }
         }
-        report_ = detector_.Analyze(input);
+        report_ = filename_.empty() ? detector_.Analyze(input) : detector_.AnalyzeLog(input);
         RenderResult();
         if (db_.Connected()) {
             try {
@@ -571,7 +670,9 @@ void CSqlScanDlg::OnScan() {
 void CSqlScanDlg::OnExport() {
     if (report_)
         try {
-            Export(this, L"SqlScan-report", [&](std::string f) { return io::Report(*report_, f); });
+            Export(this, L"SqlScan-report", [&](std::ostream &out, const std::string &format) {
+                io::WriteReport(out, *report_, format);
+            });
         } catch (const std::exception &e) {
             Error(e);
         }
@@ -580,11 +681,14 @@ void CSqlScanDlg::Detail(std::string id) {
     auto summary = scans_.ScanSummary(id);
     if (summary.empty())
         throw std::runtime_error("Проверка уже удалена");
-    auto preview = scans_.ScanHits(id, 150);
+    constexpr int previewLimit = 150;
+    const Row &scan = summary.front();
+    const auto preview = scans_.ScanHits(id, previewLimit);
+    const auto lines = HasLineScores(scan) ? scans_.ScanLines(id, previewLimit) : Rows{};
     Form f(
         IDD_DETAIL, this,
         [&](Form &w) {
-            auto &a = summary[0];
+            const auto &a = scan;
             std::ostringstream out;
             out << "Проверка № " << a[0] << " · " << a[1] << "\r\n"
                 << (a[6] == "1" ? "Подозрительно" : "Чисто") << " · " << a[7] << "\r\nИсточник: " << a[2]
@@ -593,7 +697,17 @@ void CSqlScanDlg::Detail(std::string id) {
                 << " · Сохранено: " << a[14] << "\r\n";
             if (a[12] == "1")
                 out << "Вход ограничен, проанализировано байт: " << a[11] << "\r\n";
-            for (auto &h : preview)
+            out << "\r\nПострочные оценки\r\n";
+            if (HasLineScores(a)) {
+                for (const auto &line : lines)
+                    out << "Строка " << line[0] << " · " << line[1] << " · " << LineVerdict(line[2]) << "\r\n";
+                if (std::stoull(a[8]) > lines.size())
+                    out << "Остальные строки доступны в экспорте.\r\n";
+            } else {
+                out << missingLineScores << "\r\n";
+            }
+            out << "\r\nСовпадения";
+            for (const auto &h : preview)
                 out << "\r\n" << h[0] << ':' << h[1] << " · " << h[2] << " · +" << h[3] << " · " << h[5];
             if (std::stoull(a[14]) > preview.size())
                 out << "\r\nПолный список доступен в экспорте.";
@@ -601,8 +715,15 @@ void CSqlScanDlg::Detail(std::string id) {
         },
         {},
         [&](Form &w) {
-            Export(&w, L"SqlScan-history",
-                   [&](std::string fmt) { return StoredReport(Row(summary[0].begin(), summary[0].begin() + 14), scans_.ScanHits(id), fmt); });
+            Export(&w, L"SqlScan-history", [&](std::ostream &out, const std::string &format) {
+                const auto hits = scans_.ScanHits(id);
+                auto allLines = HasLineScores(scan) ? scans_.ScanLines(id) : Rows{};
+                if (hits.size() != std::stoull(scan[14]) ||
+                    (HasLineScores(scan) && allLines.size() != std::stoull(scan[8])) ||
+                    scans_.ScanSummary(id).empty())
+                    throw std::runtime_error("Архивная проверка изменилась во время экспорта");
+                StoredReport(out, scan, hits, std::move(allLines), format);
+            });
         });
     f.DoModal();
 }
@@ -673,8 +794,13 @@ void CSqlScanDlg::Filters() {
     f.DoModal();
 }
 void CSqlScanDlg::ExportHistory() {
-    Export(this, L"SqlScan-journal",
-           [&](std::string fmt) { return Grid(historyHead, scans_.History(filter_, 0, 2147483647), fmt, 6); });
+    Export(this, L"SqlScan-journal", [&](std::ostream &out, const std::string &format) {
+        if (format == "html")
+            out << archiveHtml;
+        Grid(out, historyHead, scans_.History(filter_, 0, INT_MAX), format, 6);
+        if (format == "html")
+            out << archiveEnd;
+    });
 }
 void CSqlScanDlg::OnAction(UINT id) {
     if (!db_.Connected())

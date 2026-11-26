@@ -1,6 +1,8 @@
 """Windows GUI acceptance. Uses a disposable PostgreSQL database from SQLSCAN_TEST_CONNECTION."""
 import argparse
+import codecs
 import csv
+import ctypes
 import os
 import subprocess
 import tempfile
@@ -10,6 +12,32 @@ from pathlib import Path
 import win32con
 import win32gui
 from pywinauto import Application
+from pywinauto.remote_memory_block import RemoteMemoryBlock
+
+
+class CharFormat(ctypes.Structure):
+    # CHARFORMATW from richedit.h. EM_GETCHARFORMAT runs in the tested Rich Edit process.
+    _fields_ = [("size", ctypes.c_uint32), ("mask", ctypes.c_uint32), ("effects", ctypes.c_uint32),
+                ("height", ctypes.c_int32), ("offset", ctypes.c_int32), ("color", ctypes.c_uint32),
+                ("charset", ctypes.c_ubyte), ("family", ctypes.c_ubyte), ("face", ctypes.c_wchar * 32)]
+
+
+def score_color(control, score):
+    label = "Баллы: "
+    shown = control.window_text().replace("\r\n", "\r")
+    start = shown.index(label + str(score) + " ") + len(label)
+    control.send_message(win32con.EM_SETSEL, start, start + len(str(score)))
+    fmt = CharFormat()
+    fmt.size = ctypes.sizeof(fmt)
+    remote = RemoteMemoryBlock(control, fmt.size)
+    try:
+        remote.Write(fmt)
+        control.send_message(win32con.WM_USER + 58, 1, remote)  # EM_GETCHARFORMAT, SCF_SELECTION
+        remote.Read(fmt)
+        assert fmt.mask & 0x40000000  # CFM_COLOR
+        return tuple((fmt.color >> shift) & 255 for shift in (0, 8, 16))
+    finally:
+        remote.CleanUp()
 
 
 def wait_read(read, predicate=bool, seconds=8):
@@ -75,6 +103,18 @@ def main():
         try:
             mainwin.wait("visible")
             assert "PostgreSQL подключена" in box(mainwin, 1011).window_text()
+            post(mainwin, 40001)
+            settings = modal("Подключение к PostgreSQL")
+            post(settings, 1022)
+            def connection_notice():
+                for popup in app.windows(class_name="#32770"):
+                    if popup.handle in (settings.handle, mainwin.handle) or not popup.is_visible():
+                        continue
+                    if any("Подключение успешно. Активных правил: 18" in c.window_text()
+                           for c in popup.children(class_name="Static")):
+                        return app.window(handle=popup.handle)
+            close_modal(wait_read(connection_notice))
+            close_modal(settings, 2)
             select_tab(2)
             post(mainwin, 1013)
             edit = modal("Сигнатура")
@@ -94,22 +134,26 @@ def main():
             post(mainwin, 1004)
             choose_path(mainwin, source)
             wait_read(lambda: marker in box(mainwin, 1001).window_text())
-            box(mainwin, 1003).click()
-            wait_read(lambda: "Сохранено в журнале" in box(mainwin, 1011).window_text())
+            post(mainwin, 1003)
+            wait_read(lambda: box(mainwin, 1011).window_text(), lambda status: "Сохранено в журнале" in status)
             shown = box(mainwin, 1002).window_text()
             assert "Строка 2" in shown and "Расчёт баллов" in shown and f"{marker}  1 × 4 = 4" in shown and "есть сигнатура высокого риска" in shown
             post(mainwin, 1003)
             duplicate = standard_dialog(mainwin)
             close_modal(duplicate, 6)  # IDYES opens the existing report.
             detail = modal("Сохранённая проверка")
-            assert marker in box(detail, 1051).window_text()
+            archived_text = box(detail, 1051).window_text()
+            assert marker in archived_text
+            assert "Строка 1 · 0 · Чисто" in archived_text and "Строка 2 · 4 · Подозрительно" in archived_text
             close_modal(detail)
             for suffix in ("csv", "html", "txt"):
                 out = root / ("отчёт." + suffix)
                 post(mainwin, 1005)
                 choose_path(mainwin, out)
                 wait_read(out.exists)
-                assert marker in out.read_text(encoding="utf-8-sig")
+                payload = out.read_bytes()
+                assert payload.startswith(codecs.BOM_UTF8)
+                assert marker in payload[len(codecs.BOM_UTF8):].decode("utf-8")
             box(mainwin, 1001).set_edit_text("ручная запись")
             box(mainwin, 1003).click()
             wait_read(lambda: "Чисто" in box(mainwin, 1002).window_text())
@@ -130,6 +174,8 @@ def main():
             wait_read(archived.exists)
             markup = archived.read_text(encoding="utf-8-sig")
             assert marker in markup and '<tr class="elevated">' in markup
+            assert "<td>1</td><td>0</td><td>Чисто</td>" in markup
+            assert "<td>2</td><td>4</td><td>Подозрительно</td>" in markup
             close_modal(detail)
             post(mainwin, 1016)
             journal = root / "журнал.csv"
@@ -171,7 +217,80 @@ def main():
             shown = box(mainwin, 1002).window_text()
             assert "Вложенное условие" in shown and "1 × 4 = 4" in shown
             assert "Сохранено в журнале" in box(mainwin, 1011).window_text()
-            print("GUI passed: rule CRUD, file/manual scan, deduplication, three exports, filters, archive, delete, statistics")
+            for score, color in [(0, (32, 112, 45)), (50, (145, 111, 0)), (100, (173, 44, 39))]:
+                box(mainwin, 1001).set_edit_text("control" + ";" * score)
+                box(mainwin, 1003).click()
+                assert score_color(box(mainwin, 1002), score) == color
+
+            # The marker is outside the visible preview but within the analysis limit.
+            long_file = root / "большой.log"
+            long_file.write_bytes((("normal line\n" * 25_000) + ";;;;;").encode("ascii"))
+            post(mainwin, 1004)
+            choose_path(mainwin, long_file)
+            wait_read(lambda: box(mainwin, 1008).is_visible())
+            editor = box(mainwin, 1001)
+            assert win32gui.GetWindowLong(editor.handle, win32con.GWL_STYLE) & win32con.ES_READONLY
+            assert ";;;;;" not in editor.window_text()
+            box(mainwin, 1003).click()
+            assert "Строка 25001" in box(mainwin, 1002).window_text()
+            box(mainwin, 1008).click()
+            assert not (win32gui.GetWindowLong(editor.handle, win32con.GWL_STYLE) & win32con.ES_READONLY)
+            assert editor.window_text() == "" and not box(mainwin, 1005).is_enabled()
+            # Choose a non-ASCII word that round-trips on the host's active Windows ANSI code page.
+            word = next(w for w in ("пример", "café", "例", "한", "ش", "ก", "א", "α")
+                        if w.encode("mbcs", errors="replace").decode("mbcs") == w)
+            encoded_text = f"{word} {os.getpid()}\r\n;;;;;"
+            acp = ctypes.windll.kernel32.GetACP()
+            if acp != 65001:
+                assert encoded_text.encode("mbcs") != encoded_text.encode("utf-8")
+            reports = []
+            for encoding in ("mbcs", "utf-8-sig"):
+                sample = root / ("текст-" + encoding + ".log")
+                sample.write_bytes(encoded_text.encode(encoding))
+                post(mainwin, 1004)
+                choose_path(mainwin, sample)
+                assert editor.window_text() == encoded_text
+                box(mainwin, 1003).click()
+                reports.append(box(mainwin, 1002).window_text())
+            assert reports[0] == reports[1] and "Подозрительно" in reports[0] and "Баллы: 5 " in reports[0]
+            print(f"GUI decoded Windows ACP {acp} and UTF-8 BOM to the same text and score")
+
+            limit = 2 * 1024 * 1024
+            boundary = root / "ровно-2МиБ.log"
+            block = b"a" * 127 + b"\n"
+            boundary.write_bytes(block * (limit // len(block)))
+            oversized = root / "выше-лимита.log"
+            oversized.write_bytes(boundary.read_bytes() + b"x")
+            post(mainwin, 1004)
+            choose_path(mainwin, boundary)
+            wait_read(lambda: boundary.name in box(mainwin, 1011).window_text())
+            box(mainwin, 1003).click()
+            old_report = box(mainwin, 1002).window_text()
+            assert f"524288 из {limit} байт" in old_report
+            old_status = box(mainwin, 1011).window_text()
+            assert "Сохранено в журнале" in old_status
+            old_preview = editor.window_text()
+            post(mainwin, 1004)
+            choose_path(mainwin, oversized)
+            error = standard_dialog(mainwin)
+            assert any("Превышен лимит размера файла" in item.window_text()
+                       for item in error.descendants(class_name="Static"))
+            close_modal(error)
+            assert box(mainwin, 1011).window_text() == old_status and editor.window_text() == old_preview
+            assert box(mainwin, 1002).window_text() == old_report and box(mainwin, 1005).is_enabled()
+            post(mainwin, 1003)
+            close_modal(standard_dialog(mainwin), 6)
+            detail = modal("Сохранённая проверка")
+            assert boundary.name in box(detail, 1051).window_text()
+            close_modal(detail)
+            print("GUI passed: rule CRUD, file/manual scan, deduplication, UTF-8 BOM exports, archived scores, "
+                  "large-file preview, 2 MiB boundary and rejection, score gradient, filters, delete, statistics")
+        except Exception:
+            for popup in app.windows(class_name="#32770"):
+                if popup.handle != mainwin.handle and popup.is_visible():
+                    print("Open dialog:", popup.window_text(),
+                          [c.window_text() for c in popup.children(class_name="Static")], flush=True)
+            raise
         finally:
             win32gui.PostMessage(mainwin.handle, win32con.WM_CLOSE, 0, 0)
             try:

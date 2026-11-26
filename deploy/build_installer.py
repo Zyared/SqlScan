@@ -1,4 +1,5 @@
 """Build a per-user WiX 3 MSI from a verified review directory on Windows."""
+import json
 import argparse
 import hashlib
 import subprocess
@@ -6,6 +7,8 @@ import tempfile
 import uuid
 import xml.etree.ElementTree as ET
 from pathlib import Path
+
+from manifest import verified_files
 
 NS = "http://schemas.microsoft.com/wix/2006/wi"
 UPGRADE = "E1685777-A78D-46B3-BB8A-34AD25EE46D9"
@@ -18,15 +21,11 @@ def guid(path):
     return str(uuid.uuid5(uuid.UUID(UPGRADE),path)).upper()
 
 def build(kit,wix,out,version):
-    listed=[]
-    for line in (kit/"SHA256SUMS").read_text(encoding="utf-8").splitlines():
-        expected,name=line.split("  ",1)
-        path=(kit/name).resolve()
-        if not path.is_relative_to(kit):raise ValueError("Invalid package path")
-        with path.open("rb") as f:
-            if hashlib.file_digest(f,"sha256").hexdigest()!=expected:raise ValueError(name)
-        listed.append(name)
-    listed.append("SHA256SUMS")
+    release_version = json.loads((kit / "release.json").read_text(encoding="utf-8-sig"))["version"]
+    if version is not None and version != release_version:
+        raise ValueError(f"Installer version {version} differs from the kit version {release_version}")
+    version = release_version
+    listed = [*verified_files(kit), "SHA256SUMS"]
     root=ET.Element(f"{{{NS}}}Wix")
     product=node(root,"Product",Id=guid("product-"+version),Name="SqlScan",Language="1049",
                  Codepage="1251",Version=version,Manufacturer="SqlScan",UpgradeCode=UPGRADE)
@@ -86,5 +85,5 @@ def build(kit,wix,out,version):
 if __name__=="__main__":
     parser=argparse.ArgumentParser(description=__doc__)
     for n in ("kit","wix","out"):parser.add_argument(n,type=Path)
-    parser.add_argument("--version",default="2.0.3")
+    parser.add_argument("--version",help="Optional cross-check against release.json")
     a=parser.parse_args();build(a.kit.resolve(),a.wix.resolve(),a.out.resolve(),a.version)

@@ -5,7 +5,12 @@
 
 class ActivityChart : public CWnd {
   public:
-    Rows days;
+    struct Day {
+        std::wstring label;
+        long long total;
+        long long suspicious;
+    };
+    std::vector<Day> days;
 
   protected:
     afx_msg void OnPaint();
@@ -27,6 +32,7 @@ class CSqlScanDlg : public CDialogEx {
     afx_msg void OnSort(NMHDR *, LRESULT *);
     afx_msg void OnAction(UINT);
     afx_msg void OnChanged();
+    afx_msg void OnNewInput();
     afx_msg void OnScan();
     afx_msg void OnLoad();
     afx_msg void OnExport();
@@ -48,11 +54,15 @@ class CSqlScanDlg : public CDialogEx {
     Rows rows_;
     int page_ = 0;
     bool more_ = false, ready_ = false, loading_ = false;
+    bool previewOnly_ = false;
     std::string filename_, fileText_, fileRaw_, notice_;
     std::optional<DetectionReport> report_;
     int Tab() const { return tabs_.GetCurSel(); }
     void Layout();
     void Refresh();
+    void LoadTab(int tab);
+    void ResetReport();
+    void UseBuiltinRules();
     void Status();
     void Connect();
     void Detail(std::string id);

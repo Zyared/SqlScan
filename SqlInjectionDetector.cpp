@@ -6,7 +6,9 @@
 #include <stdexcept>
 
 namespace {
-bool Space(char c) { return c == ' ' || c == '\t' || c == '\n' || c == '\r' || c == '\f' || c == '\v'; }
+bool Space(char c) {
+    return c == ' ' || c == '\t' || c == '\n' || c == '\r' || c == '\f' || c == '\v' || c == '\0';
+}
 
 int Hex(char c) {
     if (c >= '0' && c <= '9')
@@ -103,7 +105,7 @@ std::string Context(std::string_view line, std::size_t pos) {
     auto end = (std::min)(line.size(), pos + 144);
     while (begin < pos && Continuation(line[begin]))
         ++begin;
-    while (end < line.size() && Continuation(line[end]))
+    while (end > pos && end < line.size() && Continuation(line[end]))
         --end;
     return std::string(line.substr(begin, end - begin));
 }
@@ -148,9 +150,20 @@ std::size_t AdditionalSpellingLength(std::string_view line, std::size_t pos, std
     return !rest.empty() && rest.front() >= '0' && rest.front() <= '9' ? matchedBytes : 0;
 }
 
+auto ScalarFamily(const std::vector<PatternRule> &rules) {
+    return std::find_if(rules.begin(), rules.end(), [](const PatternRule &rule) {
+        return rule.enabled && rule.category == "tautology" && rule.pattern == "or 1=1";
+    });
+}
+
 template <typename Visitor>
-void MatchLine(std::string_view line, const std::vector<PatternRule> &rules, bool legacy, Visitor visit) {
-    for (const auto &rule : rules) {
+void MatchLine(std::string_view line, const std::vector<PatternRule> &rules, bool legacy,
+               std::vector<PatternRule>::const_iterator scalarFamily, Visitor visit) {
+    if (line.empty())
+        return;
+    bool literalFound = false;
+    for (std::size_t index = 0; index < rules.size(); ++index) {
+        const auto &rule = rules[index];
         if (!rule.enabled)
             continue;
         std::string_view prefix = rule.pattern;
@@ -160,17 +173,30 @@ void MatchLine(std::string_view line, const std::vector<PatternRule> &rules, boo
             prefix = "union";
         const bool extended = prefix.size() != rule.pattern.size();
         for (auto pos = line.find(prefix); pos != line.npos; pos = line.find(prefix, pos + 1)) {
-            if (!extended || line.substr(pos).starts_with(rule.pattern))
-                visit(rule, pos, rule.pattern.size());
-            else if (auto length = AdditionalSpellingLength(line, pos, prefix))
-                visit(rule, pos, length);
+            const auto length = !extended || line.substr(pos).starts_with(rule.pattern)
+                                    ? rule.pattern.size() : AdditionalSpellingLength(line, pos, prefix);
+            if (length) {
+                literalFound = true;
+                visit(index, pos, length, nullptr);
+            }
         }
+    }
+    if (!literalFound && scalarFamily != rules.end()) {
+        const auto evidence = scalar_predicate::Match(line);
+        if (evidence.length)
+            visit(static_cast<std::size_t>(scalarFamily - rules.begin()), evidence.position,
+                  evidence.length, evidence.description);
     }
 }
 
 DetectionHit Detail(const PatternRule &rule, std::string_view line, std::size_t number, std::size_t pos,
-                    std::size_t length) {
-    return {rule.pattern, pos, rule.weight, rule.highRisk, rule.id, number, rule.category, Context(line, pos), length};
+                    std::size_t length, const char *description) {
+    return {description ? std::string(description) : rule.pattern, pos, rule.weight, rule.highRisk,
+            rule.id, number, rule.category, Context(line, pos), length};
+}
+
+int AddScore(int current, int extra) {
+    return (std::min)(current, (std::numeric_limits<int>::max)() - extra) + extra;
 }
 } // namespace
 
@@ -182,12 +208,14 @@ void DetectionReport::ForEachHit(const std::function<void(const DetectionHit &)>
     }
     std::string_view text = normalizedInput;
     std::size_t begin = 0;
+    const auto family = ScalarFamily(replayRules);
     for (const auto &score : lines) {
         auto end = text.find('\n', begin);
         auto line = text.substr(begin, end - begin);
-        MatchLine(line, replayRules, replayLegacy, [&](const PatternRule &rule, std::size_t pos, std::size_t length) {
-            visit(Detail(rule, line, score.line, pos, length));
-        });
+        MatchLine(line, replayRules, replayLegacy, score.line <= replayScalarThroughLine ? family : replayRules.end(),
+                  [&](std::size_t index, std::size_t pos, std::size_t length, const char *description) {
+                      visit(Detail(replayRules[index], line, score.line, pos, length, description));
+                  });
         if (end == text.npos)
             break;
         begin = end + 1;
@@ -232,19 +260,30 @@ SqlInjectionDetector::SqlInjectionDetector(std::vector<PatternRule> rules, int t
 }
 
 DetectionReport SqlInjectionDetector::Analyze(std::string_view input, bool legacy) const {
+    return AnalyzeInput(input, legacy ? InputMode::Legacy : InputMode::Sample);
+}
+DetectionReport SqlInjectionDetector::AnalyzeLog(std::string_view input) const {
+    return AnalyzeInput(input, InputMode::Log);
+}
+
+DetectionReport SqlInjectionDetector::AnalyzeInput(std::string_view input, InputMode mode) const {
     DetectionReport r;
     r.threshold = threshold_;
     r.originalInputBytes = input.size();
+    bool lastLineComplete = true;
     if (input.size() > maxBytes_) {
         auto end = maxBytes_;
         while (end && Continuation(input[end]))
             --end;
+        lastLineComplete = input[end] == '\r' || input[end] == '\n';
         input = input.substr(0, end);
         r.inputTruncated = true;
     }
     r.analyzedInputBytes = input.size();
     std::size_t start = 0, number = 1;
     std::vector<std::size_t> counts(rules_.size());
+    const bool legacy = mode == InputMode::Legacy;
+    const auto family = ScalarFamily(rules_);
     do {
         const auto end = legacy ? input.npos : input.find_first_of("\r\n", start);
         std::string line = Normalize(input.substr(start, end - start), legacy);
@@ -253,35 +292,34 @@ DetectionReport SqlInjectionDetector::Analyze(std::string_view input, bool legac
         r.normalizedInput += line;
         int score = 0;
         bool high = false;
-        MatchLine(line, rules_, legacy, [&](const PatternRule &rule, std::size_t pos, std::size_t length) {
-            score = (std::min)(score, (std::numeric_limits<int>::max)() - rule.weight) + rule.weight;
+        // A file contains independent records. A sample can be one formatted SQL statement.
+        // Structural evidence needs a complete record and must survive dense-report replay.
+        const bool completeRecord = mode == InputMode::Log ? (end != input.npos || lastLineComplete)
+            : (!legacy && !r.inputTruncated && number == 1 &&
+               (end == input.npos || input.find_first_not_of("\r\n", end) == input.npos));
+        if (completeRecord)
+            r.replayScalarThroughLine = number;
+        MatchLine(line, rules_, legacy, completeRecord ? family : rules_.end(),
+                  [&](std::size_t index, std::size_t pos, std::size_t length, const char *description) {
+            const auto &rule = rules_[index];
+            score = AddScore(score, rule.weight);
             high |= rule.highRisk;
             ++r.totalHits;
-            ++counts[static_cast<std::size_t>(&rule - rules_.data())];
-            if (r.hits.size() < kMaxSavedHits)
-                r.hits.push_back(Detail(rule, line, number, pos, length));
-        });
-        // A structural fallback for one complete parameter value. Ordinary multi-line SQL and
-        // previously scored lines keep their results. This path can produce only one detail.
-        if (!legacy && !r.inputTruncated && number == 1 && r.totalHits == 0 &&
-            (end == input.npos || input.find_first_not_of("\r\n", end) == input.npos)) {
-            if (const auto evidence = scalar_predicate::Match(line); evidence.length) {
-                const auto family = std::find_if(rules_.begin(), rules_.end(), [](const PatternRule &rule) {
-                    return rule.enabled && rule.category == "tautology" && rule.pattern == "or 1=1";
-                });
-                if (family != rules_.end()) {
-                    auto hit = Detail(*family, line, number, evidence.position, evidence.length);
-                    hit.pattern = evidence.description;
-                    r.contributions.push_back({hit.pattern, family->weight, 1});
-                    r.hits.push_back(std::move(hit));
-                    ++r.totalHits;
-                    high = family->highRisk;
-                    score = family->weight;
-                }
+            if (description) {
+                const auto found = std::find_if(r.contributions.begin(), r.contributions.end(),
+                    [&](const ScoreContribution &entry) { return entry.pattern == description; });
+                if (found != r.contributions.end())
+                    ++found->occurrences;
+                else
+                    r.contributions.push_back({description, rule.weight, 1});
+            } else {
+                ++counts[index];
             }
-        }
+            if (r.hits.size() < kMaxSavedHits)
+                r.hits.push_back(Detail(rule, line, number, pos, length, description));
+        });
         const bool suspicious = high || score >= threshold_;
-        r.totalScore = (std::min)(r.totalScore, (std::numeric_limits<int>::max)() - score) + score;
+        r.totalScore = AddScore(r.totalScore, score);
         r.suspicious |= suspicious;
         r.lines.push_back({number++, score, suspicious, high});
         if (end == input.npos)

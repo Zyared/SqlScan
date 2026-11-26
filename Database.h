@@ -61,6 +61,8 @@ class ScanRepository {
     std::string Previous(std::string hash);
     Rows History(const HistoryFilter &filter, int offset, int limit = 50);
     Rows ScanSummary(std::string id);
+    // Empty for historical records whose line count or full set of hits is unavailable.
+    Rows ScanLines(std::string id, int limit = -1);
     Rows ScanHits(std::string id, int limit = -1);
     void DeleteScan(std::string id);
     Rows Days();

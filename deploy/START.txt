@@ -1,4 +1,4 @@
-SqlScan 2.0 для Windows x64
+SqlScan 2.0.4 для Windows x64
 
 1. Установите MSI и откройте SqlScan из меню «Пуск» или распакуйте ZIP в обычную папку.
 2. Для работы запустите SqlScan-Local.cmd. Появится «PostgreSQL подключена».
@@ -18,7 +18,7 @@ SqlScan 2.0 для Windows x64
 
 Сравнение обнаружения с 2.0.2             source\docs\DETECTION-2.0.3.md
 Как подтвердить вердикт и баллы            source\docs\TRUST.md
-Сверка каждого пункта ТЗ                  source\docs\VERIFICATION.md
+Сверка каждого пункта ТЗ                  source\docs\VERIFICATION-2.0.4.md
 Руководство пользователя                  source\docs\USER_GUIDE.md
 Отчёт о качестве, хеши данных             source\benchmark\results\release-quality.json и source\benchmark\sources.json
 Исходники и руководство по сборке         source\README.md

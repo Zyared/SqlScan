@@ -63,11 +63,18 @@ def desktop(kit, src, data, port):
         assert box(1012).get_item(0,0).text()==saved
         box(1010).select(0)
         subprocess.run([ctl,"stop","-w","-m","fast","-D",data/"cluster"],check=True)
+        box(1010).select(1)
+        assert "Автономный режим" in box(1011).window_text() and box(1012).item_count() == 0
+        assert not box(1014).is_enabled()
+        box(1010).select(0)
         box(1001).set_edit_text("offline check");box(1003).click()
         assert "Автономный режим" in box(1011).window_text() and "Чисто" in box(1002).window_text()
         with (data/"restart.log").open("ab") as log:
             subprocess.run([ctl,"start","-w","-D",data/"cluster","-l",data/"postgres.log","-o",
                            f"-h 127.0.0.1 -p {port}"],stdin=subprocess.DEVNULL,stdout=log,stderr=log,check=True)
+        box(1010).select(2)
+        assert "PostgreSQL подключена" in box(1011).window_text() and box(1012).item_count() >= 18
+        box(1010).select(0)
         box(1001).set_edit_text("after restart");box(1003).click()
         assert "Сохранено в журнале" in box(1011).window_text()
         print("Literal stored as data; offline fallback and reconnection passed",flush=True)

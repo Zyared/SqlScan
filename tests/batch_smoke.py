@@ -25,6 +25,19 @@ with tempfile.TemporaryDirectory(prefix="sqlscan-csv-") as temp:
     for invalid in ['text,text,label\nx,y,0\n', 'text,label,label\nx,0,1\n', 'label\n0\n', 'text,label\n"unterminated\n', 'text,label\na,b,c\n']:
         src.write_text(invalid, encoding='utf-8')
         assert run('--batch', src, '--out', out).returncode != 0 and out.read_bytes() == good
+    # A malformed final row must discard even the valid results already flushed to disk.
+    src.write_bytes(b'text,label\n' + b'normal,0\n' * 4096 + b'"late error')
+    assert run('--batch', src, '--out', out).returncode != 0 and out.read_bytes() == good
+    assert set(folder.iterdir()) == {src, out}
+    # Ignore unrelated columns, including quoted multiline data. Keep selected fields exact.
+    with src.open('w', newline='', encoding='utf-8') as f:
+        w = csv.writer(f)
+        w.writerow(['notes', 'label', 'text', 'tail'])
+        w.writerow(['line\n"two"', 'tag "one", "two"', 'ordinary "item"', ''])
+    assert run('--batch', src, '--out', out).returncode == 0
+    with out.open(newline='', encoding='utf-8-sig') as f:
+        record, = csv.DictReader(f)
+        assert record['label'] == 'tag "one", "two"' and record['hits'] == '0'
     assert run('--unknown').returncode != 0
     # Concurrent writers must publish one complete result. A hard link to the input must be rejected.
     import os
