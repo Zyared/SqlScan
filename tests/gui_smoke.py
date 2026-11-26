@@ -133,8 +133,10 @@ def main():
             select_tab(0)
             post(mainwin, 1004)
             choose_path(mainwin, source)
-            wait_read(lambda: marker in box(mainwin, 1001).window_text())
-            post(mainwin, 1003)
+            wait_read(lambda: source.name in box(mainwin, 1011).window_text() and mainwin.is_enabled())
+            assert marker in box(mainwin, 1001).window_text()
+            check = box(mainwin, 1003)
+            win32gui.PostMessage(mainwin.handle, win32con.WM_COMMAND, 1003, check.handle)
             wait_read(lambda: box(mainwin, 1011).window_text(), lambda status: "Сохранено в журнале" in status)
             shown = box(mainwin, 1002).window_text()
             assert "Строка 2" in shown and "Расчёт баллов" in shown and f"{marker}  1 × 4 = 4" in shown and "есть сигнатура высокого риска" in shown
