@@ -5,12 +5,16 @@ import os
 import re
 import struct
 import subprocess
+import sys
 import tempfile
 import time
 from pathlib import Path
 import win32con
 import win32gui
 from pywinauto import Application
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from gui_smoke import click_button
 
 def regress(kit, src):
     files = sorted((src/"test_samples").glob("sum_weight_*.txt"))
@@ -55,9 +59,10 @@ def desktop(kit, src, data, port):
         spec=(src/"docs/TZ_SqlScan_2.0.md").read_text(encoding="utf-8")
         row=next(s for s in spec.splitlines() if s.startswith("- Безопасность:"))
         literal=re.findall(chr(96)+"([^"+chr(96)+"]+)"+chr(96),row)[0]
-        box(1001).set_edit_text(literal); box(1003).click()
+        box(1001).set_edit_text(literal)
+        click_button(w, 1003)
         status=box(1011).window_text()
-        assert "Сохранено в журнале" in status
+        assert "Сохранено в журнале" in status, status
         saved=re.search(r"№\s*(\d+)",status).group(1)
         box(1010).select(1)
         assert box(1012).get_item(0,0).text()==saved
@@ -67,7 +72,8 @@ def desktop(kit, src, data, port):
         assert "Автономный режим" in box(1011).window_text() and box(1012).item_count() == 0
         assert not box(1014).is_enabled()
         box(1010).select(0)
-        box(1001).set_edit_text("offline check");box(1003).click()
+        box(1001).set_edit_text("offline check")
+        click_button(w, 1003)
         assert "Автономный режим" in box(1011).window_text() and "Чисто" in box(1002).window_text()
         with (data/"restart.log").open("ab") as log:
             subprocess.run([ctl,"start","-w","-D",data/"cluster","-l",data/"postgres.log","-o",
@@ -75,7 +81,8 @@ def desktop(kit, src, data, port):
         box(1010).select(2)
         assert "PostgreSQL подключена" in box(1011).window_text() and box(1012).item_count() >= 18
         box(1010).select(0)
-        box(1001).set_edit_text("after restart");box(1003).click()
+        box(1001).set_edit_text("after restart")
+        click_button(w, 1003)
         assert "Сохранено в журнале" in box(1011).window_text()
         print("Literal stored as data; offline fallback and reconnection passed",flush=True)
         w.close();proc.wait(8)

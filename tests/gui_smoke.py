@@ -40,6 +40,15 @@ def score_color(control, score):
         remote.CleanUp()
 
 
+def click_button(dialog, control_id):
+    # Deliver the same BN_CLICKED notification for a visible, enabled button even
+    # if Windows gave foreground focus to another window during this test.
+    button = dialog.child_window(control_id=control_id).wrapper_object()
+    assert button.is_visible() and button.is_enabled()
+    win32gui.SendMessageTimeout(dialog.handle, win32con.WM_COMMAND, control_id, button.handle,
+                                win32con.SMTO_ABORTIFHUNG, 15000)
+
+
 def wait_read(read, predicate=bool, seconds=8):
     end = time.monotonic() + seconds
     last = None
@@ -135,8 +144,7 @@ def main():
             choose_path(mainwin, source)
             wait_read(lambda: source.name in box(mainwin, 1011).window_text() and mainwin.is_enabled())
             assert marker in box(mainwin, 1001).window_text()
-            check = box(mainwin, 1003)
-            win32gui.PostMessage(mainwin.handle, win32con.WM_COMMAND, 1003, check.handle)
+            click_button(mainwin, 1003)
             wait_read(lambda: box(mainwin, 1011).window_text(), lambda status: "Сохранено в журнале" in status)
             shown = box(mainwin, 1002).window_text()
             assert "Строка 2" in shown and "Расчёт баллов" in shown and f"{marker}  1 × 4 = 4" in shown and "есть сигнатура высокого риска" in shown
@@ -157,7 +165,7 @@ def main():
                 assert payload.startswith(codecs.BOM_UTF8)
                 assert marker in payload[len(codecs.BOM_UTF8):].decode("utf-8")
             box(mainwin, 1001).set_edit_text("ручная запись")
-            box(mainwin, 1003).click()
+            click_button(mainwin, 1003)
             wait_read(lambda: "Чисто" in box(mainwin, 1002).window_text())
             select_tab(1)
             post(mainwin, 1013)
@@ -199,10 +207,10 @@ def main():
             assert box(mainwin, 1019).is_visible()
             select_tab(2)
             box(mainwin, 1012).select(row_index(marker))
-            box(mainwin, 1015).click()
+            click_button(mainwin, 1015)
             select_tab(0)
             box(mainwin, 1001).set_edit_text(marker)
-            box(mainwin, 1003).click()
+            click_button(mainwin, 1003)
             assert "Чисто" in box(mainwin, 1002).window_text()
             select_tab(2)
             box(mainwin, 1012).select(row_index(marker))
@@ -210,18 +218,18 @@ def main():
             close_modal(standard_dialog(mainwin), 6)
             select_tab(0)
             box(mainwin, 1001).set_edit_text("разбор журнала: sleep ( 0")
-            box(mainwin, 1003).click()
+            click_button(mainwin, 1003)
             shown = box(mainwin, 1002).window_text()
             assert "1 × 4 = 4" in shown and "есть сигнатура высокого риска" in shown
             assert "Сохранено в журнале" in box(mainwin, 1011).window_text()
             box(mainwin, 1001).set_edit_text("fixture) and ? + (select case when (2 < 3) then 4 else 8 end)")
-            box(mainwin, 1003).click()
+            click_button(mainwin, 1003)
             shown = box(mainwin, 1002).window_text()
             assert "Вложенное условие" in shown and "1 × 4 = 4" in shown
             assert "Сохранено в журнале" in box(mainwin, 1011).window_text()
             for score, color in [(0, (32, 112, 45)), (50, (145, 111, 0)), (100, (173, 44, 39))]:
                 box(mainwin, 1001).set_edit_text("control" + ";" * score)
-                box(mainwin, 1003).click()
+                click_button(mainwin, 1003)
                 assert score_color(box(mainwin, 1002), score) == color
 
             # The marker is outside the visible preview but within the analysis limit.
@@ -233,9 +241,9 @@ def main():
             editor = box(mainwin, 1001)
             assert win32gui.GetWindowLong(editor.handle, win32con.GWL_STYLE) & win32con.ES_READONLY
             assert ";;;;;" not in editor.window_text()
-            box(mainwin, 1003).click()
+            click_button(mainwin, 1003)
             assert "Строка 25001" in box(mainwin, 1002).window_text()
-            box(mainwin, 1008).click()
+            click_button(mainwin, 1008)
             assert not (win32gui.GetWindowLong(editor.handle, win32con.GWL_STYLE) & win32con.ES_READONLY)
             assert editor.window_text() == "" and not box(mainwin, 1005).is_enabled()
             # Choose a non-ASCII word that round-trips on the host's active Windows ANSI code page.
@@ -252,7 +260,7 @@ def main():
                 post(mainwin, 1004)
                 choose_path(mainwin, sample)
                 assert editor.window_text() == encoded_text
-                box(mainwin, 1003).click()
+                click_button(mainwin, 1003)
                 reports.append(box(mainwin, 1002).window_text())
             assert reports[0] == reports[1] and "Подозрительно" in reports[0] and "Баллы: 5 " in reports[0]
             print(f"GUI decoded Windows ACP {acp} and UTF-8 BOM to the same text and score")
@@ -266,7 +274,7 @@ def main():
             post(mainwin, 1004)
             choose_path(mainwin, boundary)
             wait_read(lambda: boundary.name in box(mainwin, 1011).window_text())
-            box(mainwin, 1003).click()
+            click_button(mainwin, 1003)
             old_report = box(mainwin, 1002).window_text()
             assert f"524288 из {limit} байт" in old_report
             old_status = box(mainwin, 1011).window_text()
